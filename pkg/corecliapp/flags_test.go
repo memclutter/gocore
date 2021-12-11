@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestConfigToFlags(t *testing.T) {
@@ -16,8 +17,9 @@ func TestConfigToFlags(t *testing.T) {
 	}{
 		{
 			config: struct {
-				ApiKey string `value:"default-api-key"`
-				Debug  bool   `value:"0"`
+				ApiKey  string        `value:"default-api-key"`
+				Debug   bool          `value:"0"`
+				Timeout time.Duration `value:"10s"`
 			}{},
 			flags: []cli.Flag{
 				&cli.StringFlag{
@@ -29,6 +31,11 @@ func TestConfigToFlags(t *testing.T) {
 					Name:    "debug",
 					Value:   false,
 					EnvVars: []string{"DEBUG"},
+				},
+				&cli.DurationFlag{
+					Name:    "timeout",
+					Value:   10 * time.Second,
+					EnvVars: []string{"TIMEOUT"},
 				},
 			},
 		},
@@ -135,8 +142,9 @@ func TestContextToConfig(t *testing.T) {
 		cliFlags []cli.Flag
 		envs     map[string]string
 		config   struct {
-			ApiKey string `value:"default-api-key"`
-			Debug  bool   `value:"false"`
+			ApiKey  string        `value:"default-api-key"`
+			Debug   bool          `value:"false"`
+			Timeout time.Duration `value:"10s"`
 		}
 	}{
 		{
@@ -151,17 +159,25 @@ func TestContextToConfig(t *testing.T) {
 					Value:   true,
 					EnvVars: []string{"DEBUG"},
 				},
+				&cli.DurationFlag{
+					Name:    "timeout",
+					Value:   10 * time.Second,
+					EnvVars: []string{"TIMEOUT"},
+				},
 			},
 			envs: map[string]string{
 				"API_KEY": "api-key",
 				"DEBUG":   "1",
+				"TIMEOUT": "30m",
 			},
 			config: struct {
-				ApiKey string `value:"default-api-key"`
-				Debug  bool   `value:"false"`
+				ApiKey  string        `value:"default-api-key"`
+				Debug   bool          `value:"false"`
+				Timeout time.Duration `value:"10s"`
 			}{
-				ApiKey: "api-key",
-				Debug:  true,
+				ApiKey:  "api-key",
+				Debug:   true,
+				Timeout: 30 * time.Minute,
 			},
 		},
 	}
@@ -200,6 +216,10 @@ func TestContextToConfig(t *testing.T) {
 				case string:
 					if c.String(name) != fieldValue.String() {
 						t.Errorf("field %s not equal %v != %v", name, c.String(name), fieldValue.String())
+					}
+				case time.Duration:
+					if c.Duration(name) != fieldValue.Interface().(time.Duration) {
+						t.Errorf("field %s not equal %v != %v", name, c.Duration(name), fieldValue.Interface().(time.Duration))
 					}
 				default:
 					t.Fatalf("unsuported config type %T for config param '%s'", v, field.Name)

@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ConfigToFlags godoc
@@ -51,6 +52,16 @@ func ConfigToFlags(config interface{}) []cli.Flag {
 				Value:   defaultValue,
 				EnvVars: envVars,
 			})
+		case time.Duration:
+			defaultValue, err := time.ParseDuration(value)
+			if err != nil {
+				log.Fatalf("invalid duration value '%s' for config param '%s'", value, field.Name)
+			}
+			flags = append(flags, &cli.DurationFlag{
+				Name: name,
+				Value: defaultValue,
+				EnvVars: envVars,
+			})
 		case int:
 			defaultValue, err := strconv.ParseInt(value, 10, 64)
 			if err != nil {
@@ -85,6 +96,7 @@ func ContextToConfig(c *cli.Context, config interface{}) error {
 
 	for i := 0; i < refConfigType.NumField(); i++ {
 		field := refConfigType.Field(i)
+		fieldValue := refConfig.Field(i)
 		name := strings.TrimSpace(field.Tag.Get("name"))
 		value := field.Tag.Get("value")
 
@@ -93,22 +105,26 @@ func ContextToConfig(c *cli.Context, config interface{}) error {
 			name = corestrings.ToLowerFirst(field.Name)
 		}
 
-		switch v := refConfig.Field(i).Interface().(type) {
+		switch v := fieldValue.Interface().(type) {
 		case bool:
 			defaultValue, err := strconv.ParseBool(value)
 			if err != nil {
 				return fmt.Errorf("invalid boolean value '%s' for config param '%s': %v", value, field.Name, err)
 			}
 			if c.IsSet(name) {
-				refConfig.Field(i).SetBool(c.Bool(name))
+				fieldValue.SetBool(c.Bool(name))
 			} else {
-				refConfig.Field(i).SetBool(defaultValue)
+				fieldValue.SetBool(defaultValue)
 			}
-		case string:
+		case time.Duration:
+			defaultValue, err := time.ParseDuration(value)
+			if err != nil {
+				return fmt.Errorf("invalid duration value '%s' for config params '%s': %v", value, field.Name, err)
+			}
 			if c.IsSet(name) {
-				refConfig.Field(i).SetString(c.String(name))
+				fieldValue.Set(reflect.ValueOf(c.Duration(name)))
 			} else {
-				refConfig.Field(i).SetString(value)
+				fieldValue.Set(reflect.ValueOf(defaultValue))
 			}
 		case int:
 			defaultValue, err := strconv.ParseInt(value, 10, 64)
@@ -116,9 +132,15 @@ func ContextToConfig(c *cli.Context, config interface{}) error {
 				return fmt.Errorf("invalid int value '%s' for config param '%s': %v", value, field.Name, err)
 			}
 			if c.IsSet(name) {
-				refConfig.Field(i).SetInt(int64(c.Int(name)))
+				fieldValue.SetInt(int64(c.Int(name)))
 			} else {
-				refConfig.Field(i).SetInt(defaultValue)
+				fieldValue.SetInt(defaultValue)
+			}
+		case string:
+			if c.IsSet(name) {
+				fieldValue.SetString(c.String(name))
+			} else {
+				fieldValue.SetString(value)
 			}
 		default:
 			return fmt.Errorf("unknown type %T", v)
