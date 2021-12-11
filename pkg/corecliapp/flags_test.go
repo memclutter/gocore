@@ -1,21 +1,25 @@
 package corecliapp
 
 import (
+	"github.com/memclutter/gocore/pkg/corestrings"
 	"github.com/urfave/cli/v2"
+	"os"
+	"reflect"
+	"strings"
 	"testing"
 )
 
-func TestNewApp(t *testing.T) {
+func TestConfigToFlags(t *testing.T) {
 	tables := []struct {
-		config      interface{}
-		cliAppFlags []cli.Flag
+		config interface{}
+		flags  []cli.Flag
 	}{
 		{
 			config: struct {
 				ApiKey string `value:"default-api-key"`
 				Debug  bool   `value:"0"`
 			}{},
-			cliAppFlags: []cli.Flag{
+			flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:    "apiKey",
 					Value:   "default-api-key",
@@ -31,14 +35,14 @@ func TestNewApp(t *testing.T) {
 	}
 
 	for _, table := range tables {
-		app := NewApp().CoreConfig(table.config)
+		flags := ConfigToFlags(table.config)
 
-		if len(table.cliAppFlags) != len(app.Flags) {
-			t.Fatalf("excepted app flags and parsed app flags mismatch %d != %d", len(table.cliAppFlags), len(app.Flags))
+		if len(table.flags) != len(flags) {
+			t.Fatalf("excepted app flags and parsed app flags mismatch %d != %d", len(table.flags), len(flags))
 		}
 
-		for i, exceptedCliFlag := range table.cliAppFlags {
-			cliFlag := app.Flags[i]
+		for i, exceptedCliFlag := range table.flags {
+			cliFlag := flags[i]
 			switch exceptedCliFlag := exceptedCliFlag.(type) {
 			case *cli.StringFlag:
 				stringCliFlag, ok := cliFlag.(*cli.StringFlag)
@@ -124,4 +128,101 @@ func TestNewApp(t *testing.T) {
 		}
 	}
 
+}
+
+func TestContextToConfig(t *testing.T) {
+	tables := []struct {
+		cliFlags []cli.Flag
+		envs     map[string]string
+		config   struct {
+			ApiKey string `value:"default-api-key"`
+			Debug  bool   `value:"false"`
+		}
+	}{
+		{
+			cliFlags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "apiKey",
+					Value:   "default-api-key",
+					EnvVars: []string{"API_KEY"},
+				},
+				&cli.BoolFlag{
+					Name:    "debug",
+					Value:   true,
+					EnvVars: []string{"DEBUG"},
+				},
+			},
+			envs: map[string]string{
+				"API_KEY": "api-key",
+				"DEBUG":   "1",
+			},
+			config: struct {
+				ApiKey string `value:"default-api-key"`
+				Debug  bool   `value:"false"`
+			}{
+				ApiKey: "api-key",
+				Debug:  true,
+			},
+		},
+	}
+
+	for _, table := range tables {
+		app := cli.NewApp()
+		app.Flags = table.cliFlags
+		app.Action = func(c *cli.Context) error {
+			exceptedConfig := table.config
+			if err := ContextToConfig(c, &table.config); err != nil {
+				t.Fatalf("error parse app context: %v", err)
+			}
+
+			refConfig := reflect.ValueOf(exceptedConfig)
+			refConfigType := refConfig.Type()
+
+			for i := 0; i < refConfigType.NumField(); i++ {
+				field := refConfigType.Field(i)
+				fieldValue := refConfig.Field(i)
+				name := strings.TrimSpace(field.Tag.Get("name"))
+
+				// Set name as struct name lowerCamelCase
+				if len(name) == 0 {
+					name = corestrings.ToLowerFirst(field.Name)
+				}
+
+				switch v := fieldValue.Interface().(type) {
+				case bool:
+					if c.Bool(name) != fieldValue.Bool() {
+						t.Errorf("field %s not equal %v != %v", name, c.Bool(name), fieldValue.Bool())
+					}
+				case int:
+					if c.Int(name) != int(fieldValue.Int()) {
+						t.Errorf("field %s not equal %v != %v", name, c.Int(name), fieldValue.Int())
+					}
+				case string:
+					if c.String(name) != fieldValue.String() {
+						t.Errorf("field %s not equal %v != %v", name, c.String(name), fieldValue.String())
+					}
+				default:
+					t.Fatalf("unsuported config type %T for config param '%s'", v, field.Name)
+				}
+			}
+
+			return nil
+		}
+
+		for name, value := range table.envs {
+			if err := os.Setenv(name, value); err != nil {
+				t.Fatalf("error set test env %s=%s: %v", name, value, err)
+			}
+		}
+
+		if err := app.Run([]string{"gocore"}); err != nil {
+			t.Fatalf("error run test app: %v", err)
+		}
+
+		for name := range table.envs {
+			if err := os.Unsetenv(name); err != nil {
+				t.Fatalf("error unset test env %s: %v", name, err)
+			}
+		}
+	}
 }
