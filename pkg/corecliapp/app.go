@@ -32,7 +32,6 @@ func (app *App) CoreConfig(config interface{}) *App {
 
 type CoreCommand interface {
 	Run(c *cli.Context) error
-	Flags() []cli.Flag
 }
 
 func (app *App) CoreCommands(commands []CoreCommand) *App {
@@ -42,7 +41,6 @@ func (app *App) CoreCommands(commands []CoreCommand) *App {
 
 		app.Commands = append(app.Commands, &cli.Command{
 			Name:   name,
-			Flags:  c.Flags(),
 			Action: c.Run,
 		})
 	}
