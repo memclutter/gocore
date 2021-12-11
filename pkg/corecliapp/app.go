@@ -37,7 +37,7 @@ type CoreCommand interface {
 func (app *App) CoreCommands(commands []CoreCommand) *App {
 	app.Commands = cli.Commands{}
 	for _, c := range commands {
-		name := corestrings.ToLowerFirst(reflect.ValueOf(c).Type().Name())
+		name := corestrings.ToLowerFirst(reflect.ValueOf(c).Elem().Type().Name())
 
 		app.Commands = append(app.Commands, &cli.Command{
 			Name:   name,
