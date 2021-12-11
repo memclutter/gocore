@@ -23,5 +23,18 @@
 //go:generate go run ./gen/apply/main.go -type float64 -out apply_float64.go
 //go:generate go run ./gen/apply/main.go -type byte -out apply_byte.go
 //go:generate go run ./gen/apply/main.go -type rune -out apply_rune.go
+
+//go:generate go run ./gen/filter/main.go -type string -out filter_string.go
+//go:generate go run ./gen/filter/main.go -type int -out filter_int.go
+//go:generate go run ./gen/filter/main.go -type int32 -out filter_int32.go
+//go:generate go run ./gen/filter/main.go -type int64 -out filter_int64.go
+//go:generate go run ./gen/filter/main.go -type uint8 -out filter_uint8.go
+//go:generate go run ./gen/filter/main.go -type uint16 -out filter_uint16.go
+//go:generate go run ./gen/filter/main.go -type uint32 -out filter_uint32.go
+//go:generate go run ./gen/filter/main.go -type uint64 -out filter_uint64.go
+//go:generate go run ./gen/filter/main.go -type float32 -out filter_float32.go
+//go:generate go run ./gen/filter/main.go -type float64 -out filter_float64.go
+//go:generate go run ./gen/filter/main.go -type byte -out filter_byte.go
+//go:generate go run ./gen/filter/main.go -type rune -out filter_rune.go
 package coreslices
 
