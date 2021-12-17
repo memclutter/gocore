@@ -1,48 +1,18 @@
 package corecliapp
 
-import (
-	"github.com/memclutter/gocore/pkg/corestrings"
-	"github.com/urfave/cli/v2"
-	"reflect"
-)
+import "fmt"
 
-// App godoc
-//
-// urfave/cli/v2 application wrapper.
-type App struct {
-	*cli.App
+type Command interface {
+	Run() error
 }
 
-// NewApp godoc
+// Run godoc
 //
-// Create new instance of app
-func NewApp() *App {
-	return &App{
-		cli.NewApp(),
+// Create and run app. Use app define for create urfave/cli/v2 app and run it.
+func Run(appDefine interface{}, arguments []string) error {
+	app, err := create(appDefine)
+	if err != nil {
+		return fmt.Errorf("error create urfave/cli/v2 app: %v", err)
 	}
-}
-
-// CoreConfig godoc
-//
-// Parse and set up application config
-func (app *App) CoreConfig(config interface{}) *App {
-	app.Flags = ConfigToFlags(config)
-	return app
-}
-
-type CoreCommand interface {
-	Run(c *cli.Context) error
-}
-
-func (app *App) CoreCommands(commands []CoreCommand) *App {
-	app.Commands = cli.Commands{}
-	for _, c := range commands {
-		name := corestrings.ToLowerFirst(reflect.ValueOf(c).Elem().Type().Name())
-
-		app.Commands = append(app.Commands, &cli.Command{
-			Name:   name,
-			Action: c.Run,
-		})
-	}
-	return app
+	return app.Run(arguments)
 }
