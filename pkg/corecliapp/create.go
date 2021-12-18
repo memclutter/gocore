@@ -131,9 +131,98 @@ func lookupFlags(rAppDefine reflect.Value, flags []cli.Flag) ([]cli.Flag, error)
 // Lookup and parse app commands from app define struct.
 func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 	var err error
-	commands := make(cli.Commands, 0)
+	commands := cli.Commands{}
+	rAppDefine = valueOfPtr(rAppDefine)
+	rtAppDefine := typeOfPtr(rAppDefine)
 
+	// Root commands lookup, search `cli:"commands"` struct tag
+	if rtAppDefine.Kind() == reflect.Struct {
+		for i := 0; i < rtAppDefine.NumField(); i++ {
+			field := rtAppDefine.Field(i)
 
+			if field.Tag.Get("cli") == "commands" {
+				commands, err = lookupCommands(rAppDefine.Field(i))
+				if err != nil {
+					return nil, fmt.Errorf("error lookup root commands: %v", err)
+				}
+				break
+			}
+		}
+	}
+
+	// Iterate over slice of Commands
+	if rtAppDefine.Kind() == reflect.Slice {
+		for i := 0; i < rAppDefine.Len(); i++ {
+			// @TODO check Command interface
+			rCommand := valueOfPtr(reflect.ValueOf(rAppDefine.Index(i).Interface()))
+			rtCommand := typeOfPtr(rCommand)
+			command := &cli.Command{}
+			flagsIndex := -1
+			for j := 0; j < rtCommand.NumField(); j++ {
+				field := rtCommand.Field(j)
+				if field.Tag.Get("cli.command") == "name" {
+					command.Name = rCommand.Field(j).String()
+				} else if field.Tag.Get("cli.command") == "commands" {
+					command.Subcommands, err = lookupCommands(rCommand.Field(j))
+					if err != nil {
+						return nil, fmt.Errorf("error lookup subcommands: %v", err)
+					}
+				} else if field.Tag.Get("cli.command") == "flags" {
+					flagsIndex = j
+					command.Flags, err = lookupFlags(rCommand.Field(j), []cli.Flag{})
+					if err != nil {
+						return nil, fmt.Errorf("error lookup command flags: %v", err)
+					}
+				}
+			}
+
+			// Register command function
+			command.Action = func(c *cli.Context) error {
+
+				// Preset app flags
+				rFlags := valueOfPtr(rCommand.Field(flagsIndex))
+				setFlags(c, rFlags)
+
+				// Call run method
+				return callRun(rCommand)
+			}
+
+			commands = append(commands, command)
+		}
+	}
 
 	return commands, err
+}
+
+func setFlags(c *cli.Context, rFlags reflect.Value) {
+	rtFlags := typeOfPtr(rFlags)
+	for j := 0; j < rtFlags.NumField(); j++ {
+		rfField := rtFlags.Field(j)
+		rField := rFlags.Field(j)
+
+		if rfField.Anonymous {
+			setFlags(c, rField)
+			continue
+		}
+
+		name := rfField.Tag.Get("cli.flag.name")
+		switch rfField.Type.Kind() {
+		case reflect.String:
+			rField.SetString(c.String(name))
+		case reflect.Bool:
+			rField.SetBool(c.Bool(name))
+		case reflect.Int:
+			rField.SetInt(int64(c.Int(name)))
+		case reflect.Int64:
+			rField.SetInt(int64(c.Int64(name)))
+		}
+	}
+}
+
+func callRun(rCommand reflect.Value) error {
+	rResult := rCommand.MethodByName("Run").Call([]reflect.Value{})
+	if len(rResult) == 0 || rResult[0].IsNil() {
+		return nil
+	}
+	return rResult[0].Interface().(error)
 }

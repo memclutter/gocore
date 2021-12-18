@@ -74,27 +74,27 @@ func Test_lookupFlags(t *testing.T) {
 	tables := []struct {
 		rAppDefine reflect.Value
 		flags      []cli.Flag
-		err error
+		err        error
 	}{
 		{
 			rAppDefine: reflect.ValueOf(struct {
 				Flags struct {
 					Token string `cli.flag.name:"token"`
-					Debug bool `cli.flag.name:"debug"`
+					Debug bool   `cli.flag.name:"debug"`
 				} `cli:"flags"`
 			}{
 				Flags: struct {
 					Token string `cli.flag.name:"token"`
-					Debug bool `cli.flag.name:"debug"`
+					Debug bool   `cli.flag.name:"debug"`
 				}{Token: "Test", Debug: true},
 			}),
 			flags: []cli.Flag{
 				&cli.StringFlag{
-					Name: "token",
+					Name:  "token",
 					Value: "Test",
 				},
 				&cli.BoolFlag{
-					Name: "debug",
+					Name:  "debug",
 					Value: true,
 				},
 			},
@@ -143,8 +143,72 @@ func Test_lookupFlags(t *testing.T) {
 	}
 }
 
-func Test_lookupCommands(t *testing.T)  {
-	tables := []struct{
+type TestApp struct {
+	Name     string        `cli:"name"`
+	Flags    *TestAppFlags `cli:"flags"`
+	Commands []Command     `cli:"commands"`
+}
 
+type TestAppFlags struct {
+	Debug bool `cli.flag.name:"debug" cli.flag.envVars:"DEBUG"`
+}
+
+type TestAppCommand struct {
+	Name     string    `cli.command:"name"`
+	Commands []Command `cli.command:"commands"`
+}
+
+type TestAppCommandFlags struct {
+	Addr string `cli.flag.name:"addr" cli.flag.envVars:"ADDR"`
+}
+
+func (cmd TestAppCommand) Run() error {
+	return nil
+}
+
+type TestAppSubCommand struct {
+	Name string `cli.command:"name"`
+}
+
+func (cmd TestAppSubCommand) Run() error {
+	return nil
+}
+
+func Test_lookupCommands(t *testing.T) {
+	appDefine := TestApp{
+		Name: "testApp",
+		Commands: []Command{
+			&TestAppCommand{
+				Name: "testCommand",
+				Commands: []Command{
+					&TestAppSubCommand{
+						Name: "testSubCommand",
+					},
+				},
+			},
+		},
+	}
+
+	commands, err := lookupCommands(reflect.ValueOf(appDefine))
+	if err != nil {
+		t.Fatalf("error lookup commands: %v", err)
+	}
+
+	if len(commands) != len(appDefine.Commands) {
+		t.Fatalf("assert commands len failed, excepted %d, actual %d", len(appDefine.Commands), len(commands))
+	}
+
+	exceptedCommand := appDefine.Commands[0].(*TestAppCommand)
+	if commands[0].Name != exceptedCommand.Name {
+		t.Fatalf("assert command name failed, excepted '%s', actual '%s'", exceptedCommand.Name, commands[0].Name)
+	}
+
+	if len(commands[0].Subcommands) != len(exceptedCommand.Commands) {
+		t.Fatalf("assert subcommand len failed, excepted %d, actual %d", len(exceptedCommand.Commands), len(commands[0].Subcommands))
+	}
+
+	exceptedSubCommand := exceptedCommand.Commands[0].(*TestAppSubCommand)
+	if commands[0].Subcommands[0].Name != exceptedSubCommand.Name {
+		t.Fatalf("assert subcommand name failed, excepted '%s', actual '%s'", exceptedSubCommand.Name, commands[0].Subcommands[0].Name)
 	}
 }
