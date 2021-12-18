@@ -26,5 +26,6 @@ jobs:
       run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
 
     - name: Upload to codecov
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.go_version == '1.17' }}
       run: bash <(curl -s https://codecov.io/bash)
 
