@@ -1,6 +1,7 @@
 package corecliapp
 
 import (
+	"fmt"
 	"github.com/urfave/cli/v2"
 	"reflect"
 	"testing"
@@ -8,8 +9,9 @@ import (
 
 func Test_setFlags(t *testing.T) {
 	type Flags struct {
-		Debug    bool `cli.flag.name:"debug" cli.flag.envVars:"DEBUG"`
-		MaxIndex int  `cli.flag.name:"maxIndex"`
+		Debug      bool  `cli.flag.name:"debug" cli.flag.envVars:"DEBUG"`
+		MaxIndex   int   `cli.flag.name:"maxIndex"`
+		MaxIndex64 int64 `cli.flag.name:"maxIndex64"`
 	}
 	type ServerFlags struct {
 		Flags
@@ -20,6 +22,7 @@ func Test_setFlags(t *testing.T) {
 	app.Flags = []cli.Flag{
 		&cli.BoolFlag{Name: "debug", Value: false},
 		&cli.IntFlag{Name: "maxIndex", Value: 0},
+		&cli.Int64Flag{Name: "maxIndex64", Value: 0},
 	}
 	app.Commands = cli.Commands{
 		&cli.Command{
@@ -56,10 +59,14 @@ func Test_setFlags(t *testing.T) {
 			t.Fatalf("assert set flags type int failed")
 		}
 
+		if flags.MaxIndex64 != 20 {
+			t.Fatalf("assert set flags type int64 failed")
+		}
+
 		return nil
 	}
 
-	if err := app.Run([]string{"testApp", "--debug", "--maxIndex", "10"}); err != nil {
+	if err := app.Run([]string{"testApp", "--debug", "--maxIndex", "10", "--maxIndex64", "20"}); err != nil {
 		t.Fatalf("error run test app: %v", err)
 	}
 
@@ -68,6 +75,33 @@ func Test_setFlags(t *testing.T) {
 	}
 }
 
-func Test_callRun(t *testing.T) {
+type TestCallRunCommand struct {
 
+}
+
+func (cmd TestCallRunCommand) Run() error {
+	return nil
+}
+
+func Test_callRun(t *testing.T) {
+	err := callRun(reflect.ValueOf(TestCallRunCommand{}))
+	if err != nil {
+		t.Fatalf("error call run, excepted no errors, actual have error: %v", err)
+	}
+}
+
+type TestCallRunCommandWithError struct {
+
+}
+
+func (cmd TestCallRunCommandWithError) Run() error {
+	return fmt.Errorf("test")
+}
+
+func Test_callRunWithError(t *testing.T)  {
+	exceptedErr :=fmt.Errorf("test")
+	err := callRun(reflect.ValueOf(TestCallRunCommandWithError{}))
+	if err != exceptedErr {
+		t.Fatalf("error call run, excepted have error '%s', actual '%s'", exceptedErr, err)
+	}
 }
