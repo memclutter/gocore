@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, corecliapp ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, corecliapp ]
 
 jobs:
 
@@ -23,4 +23,8 @@ jobs:
         go-version: ${{ matrix.go_version }}
 
     - name: Test GO ${{ matrix.go_version }}
-      run: go test -v ./...
+      run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+    - name: Upload to codecov
+      run: bash <(curl -s https://codecov.io/bash)
+
