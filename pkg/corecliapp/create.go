@@ -184,6 +184,11 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 				rFlags := corereflect.PtrValueOf(rCommand.Field(flagsIndex))
 				setFlags(c, rFlags)
 
+				// Preset app services
+				if err := setServices(c, rCommand); err != nil {
+					return fmt.Errorf("error set service: %v", err)
+				}
+
 				// Call run method
 				return callRun(rCommand)
 			}
