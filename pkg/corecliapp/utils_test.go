@@ -101,7 +101,7 @@ func (cmd TestCallRunCommandWithError) Run() error {
 func Test_callRunWithError(t *testing.T)  {
 	exceptedErr :=fmt.Errorf("test")
 	err := callRun(reflect.ValueOf(TestCallRunCommandWithError{}))
-	if err != exceptedErr {
+	if err.Error() != exceptedErr.Error() {
 		t.Fatalf("error call run, excepted have error '%s', actual '%s'", exceptedErr, err)
 	}
 }
