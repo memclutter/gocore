@@ -1,13 +1,13 @@
-package corecliapp
+package corereflect
 
 import (
 	"reflect"
 )
 
-// typeOfPtr godoc
+// PtrTypeOf godoc
 //
 // Process interface object and return reflect.TypeOf() for ptr or struct
-func typeOfPtr(v reflect.Value) reflect.Type {
+func PtrTypeOf(v reflect.Value) reflect.Type {
 	typeOf := v.Type()
 	kind := typeOf.Kind()
 
@@ -19,10 +19,10 @@ func typeOfPtr(v reflect.Value) reflect.Type {
 	}
 }
 
-// valueOfPtr godoc
+// PtrValueOf godoc
 //
 // Process interface object and return reflect.Value for ptr or non ptr
-func valueOfPtr(v reflect.Value) reflect.Value {
+func PtrValueOf(v reflect.Value) reflect.Value {
 	typeOf := v.Type()
 	kind := typeOf.Kind()
 

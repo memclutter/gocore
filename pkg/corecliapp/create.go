@@ -2,6 +2,7 @@ package corecliapp
 
 import (
 	"fmt"
+	"github.com/memclutter/gocore/pkg/corereflect"
 	"github.com/memclutter/gocore/pkg/coreslices"
 	"github.com/urfave/cli/v2"
 	"reflect"
@@ -35,8 +36,8 @@ func create(appDefine interface{}) (*cli.App, error) {
 //
 // Lookup and parse app name from app define struct. App name contains in struct field with tag `cli:"name"`
 func lookupName(rAppDefine reflect.Value) string {
-	rAppDefine = valueOfPtr(rAppDefine)
-	rtAppDefine := typeOfPtr(rAppDefine)
+	rAppDefine = corereflect.PtrValueOf(rAppDefine)
+	rtAppDefine := corereflect.PtrTypeOf(rAppDefine)
 
 	// @only struct processing
 	if rtAppDefine.Kind() != reflect.Struct {
@@ -62,8 +63,8 @@ func lookupName(rAppDefine reflect.Value) string {
 // Lookup and parse app flags from app define struct.
 func lookupFlags(rAppDefine reflect.Value, flags []cli.Flag) ([]cli.Flag, error) {
 	var err error
-	rAppDefine = valueOfPtr(rAppDefine)
-	rtAppDefine := typeOfPtr(rAppDefine)
+	rAppDefine = corereflect.PtrValueOf(rAppDefine)
+	rtAppDefine := corereflect.PtrTypeOf(rAppDefine)
 
 	// @only struct processing
 	if rtAppDefine.Kind() != reflect.Struct {
@@ -132,8 +133,8 @@ func lookupFlags(rAppDefine reflect.Value, flags []cli.Flag) ([]cli.Flag, error)
 func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 	var err error
 	commands := cli.Commands{}
-	rAppDefine = valueOfPtr(rAppDefine)
-	rtAppDefine := typeOfPtr(rAppDefine)
+	rAppDefine = corereflect.PtrValueOf(rAppDefine)
+	rtAppDefine := corereflect.PtrTypeOf(rAppDefine)
 
 	// Root commands lookup, search `cli:"commands"` struct tag
 	if rtAppDefine.Kind() == reflect.Struct {
@@ -154,8 +155,8 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 	if rtAppDefine.Kind() == reflect.Slice {
 		for i := 0; i < rAppDefine.Len(); i++ {
 			// @TODO check Command interface
-			rCommand := valueOfPtr(reflect.ValueOf(rAppDefine.Index(i).Interface()))
-			rtCommand := typeOfPtr(rCommand)
+			rCommand := corereflect.PtrValueOf(reflect.ValueOf(rAppDefine.Index(i).Interface()))
+			rtCommand := corereflect.PtrTypeOf(rCommand)
 			command := &cli.Command{}
 			flagsIndex := -1
 			for j := 0; j < rtCommand.NumField(); j++ {
@@ -180,7 +181,7 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 			command.Action = func(c *cli.Context) error {
 
 				// Preset app flags
-				rFlags := valueOfPtr(rCommand.Field(flagsIndex))
+				rFlags := corereflect.PtrValueOf(rCommand.Field(flagsIndex))
 				setFlags(c, rFlags)
 
 				// Call run method
@@ -195,7 +196,7 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 }
 
 func setFlags(c *cli.Context, rFlags reflect.Value) {
-	rtFlags := typeOfPtr(rFlags)
+	rtFlags := corereflect.PtrTypeOf(rFlags)
 	for j := 0; j < rtFlags.NumField(); j++ {
 		rfField := rtFlags.Field(j)
 		rField := rFlags.Field(j)
