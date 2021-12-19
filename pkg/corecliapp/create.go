@@ -3,10 +3,8 @@ package corecliapp
 import (
 	"fmt"
 	"github.com/memclutter/gocore/pkg/corereflect"
-	"github.com/memclutter/gocore/pkg/coreslices"
 	"github.com/urfave/cli/v2"
 	"reflect"
-	"strings"
 )
 
 // create godoc
@@ -73,55 +71,15 @@ func lookupFlags(rAppDefine reflect.Value, flags []cli.Flag) ([]cli.Flag, error)
 
 	for i := 0; i < rtAppDefine.NumField(); i++ {
 		field := rtAppDefine.Field(i)
-		fieldType := field.Type
-		fieldTypeKind := fieldType.Kind()
 
 		// Flags struct
 		if field.Tag.Get("cli") == "flags" {
-			flags, err = lookupFlags(rAppDefine.Field(i), flags)
+			flags, err = createFlags(rAppDefine.Field(i).Interface(), flags)
 			if err != nil {
 				return nil, err
 			}
 			continue
 		}
-
-		// Current struct flags
-		name := strings.TrimSpace(field.Tag.Get("cli.flag.name"))
-		if len(name) == 0 {
-			continue
-		}
-
-		// EnvVars "NAME,VAR_NAME, " -> []string{"NAME", "VAR_NAME"}
-		envVars := strings.Split(field.Tag.Get("cli.flag.envVars"), ",")
-		envVars = coreslices.StringApply(envVars, func(i int, s string) string { return strings.TrimSpace(s) })
-		envVars = coreslices.StringFilter(envVars, func(i int, s string) bool { return len(s) > 0 })
-
-		// Default values
-		var flag cli.Flag
-		switch fieldTypeKind {
-		case reflect.Bool:
-			flag = &cli.BoolFlag{
-				Name:    name,
-				Value:   rAppDefine.Field(i).Bool(),
-				EnvVars: envVars,
-			}
-		case reflect.String:
-			flag = &cli.StringFlag{
-				Name:    name,
-				Value:   rAppDefine.Field(i).String(),
-				EnvVars: envVars,
-			}
-		case reflect.Int:
-			flag = &cli.IntFlag{
-				Name:    name,
-				Value:   int(rAppDefine.Field(i).Int()),
-				EnvVars: envVars,
-			}
-		default:
-			return nil, fmt.Errorf("unsupport kind of type %s", fieldTypeKind)
-		}
-
-		flags = append(flags, flag)
 	}
 
 	return flags, nil

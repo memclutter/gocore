@@ -4,12 +4,14 @@ import (
 	"github.com/urfave/cli/v2"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func Test_create(t *testing.T) {
 	type Flags struct {
-		Debug  bool   `cli.flag.name:"debug" cli.flag.envVars:"DEBUG"`
-		String string `cli.flag.name:"string" cli.flag.envVars:"STRING"`
+		Debug   bool          `cli.flag.name:"debug" cli.flag.envVars:"DEBUG"`
+		String  string        `cli.flag.name:"string" cli.flag.envVars:"STRING"`
+		Timeout time.Duration `cli.flag.name:"timeout" cli.flag.envVars:"TIMEOUT"`
 	}
 	type App struct {
 		Name  string `cli:"name"`
@@ -19,8 +21,9 @@ func Test_create(t *testing.T) {
 	appDefine := &App{
 		Name: "test",
 		Flags: &Flags{
-			Debug:  false,
-			String: "default",
+			Debug:   false,
+			String:  "default",
+			Timeout: 10 * time.Second,
 		},
 	}
 
@@ -33,8 +36,9 @@ func Test_create(t *testing.T) {
 		t.Errorf("app name assert error, excepted '%s', actual '%s'", appDefine.Name, app.Name)
 	}
 
-	if len(app.Flags) != 2 {
-		t.Fatalf("app flags count assert error, excepted %d, actual %d", 2, len(app.Flags))
+	exceptedFlagsLen := 3
+	if len(app.Flags) != exceptedFlagsLen {
+		t.Fatalf("app flags count assert error, excepted %d, actual %d", exceptedFlagsLen, len(app.Flags))
 	}
 
 	debugBoolFlag, ok := app.Flags[0].(*cli.BoolFlag)
@@ -61,6 +65,15 @@ func Test_create(t *testing.T) {
 
 	if stringFlag.Value != appDefine.Flags.String {
 		t.Fatalf("app flag string default value assert error, excepted %v, actual %v", appDefine.Flags.String, stringFlag.Value)
+	}
+
+	durationFlag, ok := app.Flags[2].(*cli.DurationFlag)
+	if !ok {
+		t.Fatalf("app flag duration type assert error, excepted duration, actual %T", app.Flags[2])
+	} else if durationFlag.Name != "timeout" {
+		t.Fatalf("app flag duration name assert error, excepted 'timeout', actual '%s'", durationFlag.Name)
+	} else if durationFlag.Value != appDefine.Flags.Timeout {
+		t.Fatalf("app flag duration value assert error, excepted %v, actual %v", appDefine.Flags.Timeout, durationFlag.Value)
 	}
 }
 
@@ -192,11 +205,11 @@ func (cmd TestAppSubCommand) Run() error {
 
 func Test_lookupCommands(t *testing.T) {
 	appDefine := TestApp{
-		Name: "testApp",
+		Name:  "testApp",
 		Flags: &TestAppFlags{},
 		Commands: []Command{
 			&TestAppCommand{
-				Name: "testCommand",
+				Name:  "testCommand",
 				Flags: &TestAppCommandFlags{},
 				Commands: []Command{
 					&TestAppSubCommand{
