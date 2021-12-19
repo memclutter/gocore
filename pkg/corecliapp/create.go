@@ -113,7 +113,8 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 	if rtAppDefine.Kind() == reflect.Slice {
 		for i := 0; i < rAppDefine.Len(); i++ {
 			// @TODO check Command interface
-			rCommand := corereflect.PtrValueOf(reflect.ValueOf(rAppDefine.Index(i).Interface()))
+			rrCommand := rAppDefine.Index(i)
+			rCommand := corereflect.PtrValueOf(reflect.ValueOf(rrCommand.Interface()))
 			rtCommand := corereflect.PtrTypeOf(rCommand)
 			command := &cli.Command{}
 			flagsIndex := -1
@@ -150,7 +151,11 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 				}
 
 				// Call run method
-				return callRun(rCommand)
+				rResult := rrCommand.MethodByName("Run").Call([]reflect.Value{})
+				if len(rResult) == 0 || rResult[0].IsNil() {
+					return nil
+				}
+				return rResult[0].Interface().(error)
 			}
 
 			commands = append(commands, command)
