@@ -128,7 +128,7 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 					}
 				} else if field.Tag.Get("cli.command") == "flags" {
 					flagsIndex = j
-					command.Flags, err = lookupFlags(rCommand.Field(j), []cli.Flag{})
+					command.Flags, err = createFlags(rCommand.Field(j).Interface(), []cli.Flag{})
 					if err != nil {
 						return nil, fmt.Errorf("error lookup command flags: %v", err)
 					}
@@ -140,7 +140,9 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 
 				// Preset app flags
 				rFlags := corereflect.PtrValueOf(rCommand.Field(flagsIndex))
-				setFlags(c, rFlags)
+				if err := setFlags(c, rFlags); err != nil {
+					return fmt.Errorf("set flags error: %v", err)
+				}
 
 				// Preset app services
 				if err := setServices(c, rCommand); err != nil {
