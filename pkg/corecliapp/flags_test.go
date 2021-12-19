@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"reflect"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -16,6 +17,7 @@ func Test_createFlag(t *testing.T) {
 		value       reflect.Value
 		flag        cli.Flag
 		err         error
+		errVersions map[string]error
 	}{
 		{
 			structField: reflect.StructField{Name: "Token", Type: reflect.TypeOf("token-default-value")},
@@ -46,6 +48,9 @@ func Test_createFlag(t *testing.T) {
 			value:       reflect.ValueOf(10 * time.Second),
 			flag:        nil,
 			err:         fmt.Errorf(`error parse duration 'invalid30s': time: invalid duration "invalid30s"`),
+			errVersions: map[string]error{
+				"go1.14": fmt.Errorf(`error parse duration 'invalid30s': time: invalid duration invalid30s`),
+			},
 		},
 		{
 			structField: reflect.StructField{Name: "Debug", Type: reflect.TypeOf(true)},
@@ -195,8 +200,12 @@ func Test_createFlag(t *testing.T) {
 
 	for _, table := range tables {
 		flag, err := createFlag(table.structField, table.value)
-		if fmt.Sprintf("%v", table.err) != fmt.Sprintf("%v", err) {
-			t.Errorf("assert error failed, excepted '%s', actual '%s'", table.err, err)
+		exceptedErr := table.err
+		if versionedErr, ok := table.errVersions[runtime.Version()]; ok {
+			exceptedErr = versionedErr
+		}
+		if fmt.Sprintf("%v", exceptedErr) != fmt.Sprintf("%v", err) {
+			t.Errorf("assert error failed, excepted '%s', actual '%s'", exceptedErr, err)
 		}
 
 		if !reflect.DeepEqual(table.flag, flag) {
