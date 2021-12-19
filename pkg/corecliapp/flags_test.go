@@ -10,6 +10,7 @@ import (
 )
 
 func Test_createFlag(t *testing.T) {
+	fmt.Printf("GO VERSION: %s\n", runtime.Version())
 	exampleTimeDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	exampleUnsupported := struct{ A string }{A: "a"}
 	tables := []struct {
