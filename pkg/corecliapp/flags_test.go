@@ -10,7 +10,6 @@ import (
 )
 
 func Test_createFlag(t *testing.T) {
-	fmt.Printf("GO VERSION: %s\n", runtime.Version())
 	exampleTimeDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	exampleUnsupported := struct{ A string }{A: "a"}
 	tables := []struct {
@@ -51,6 +50,7 @@ func Test_createFlag(t *testing.T) {
 			err:         fmt.Errorf(`error parse duration 'invalid30s': time: invalid duration "invalid30s"`),
 			errVersions: map[string]error{
 				"go1.14": fmt.Errorf(`error parse duration 'invalid30s': time: invalid duration invalid30s`),
+				"go1.14.15": fmt.Errorf(`error parse duration 'invalid30s': time: invalid duration invalid30s`),
 			},
 		},
 		{
