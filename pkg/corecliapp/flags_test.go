@@ -197,6 +197,24 @@ func Test_createFlag(t *testing.T) {
 			flag:        nil,
 			err:         fmt.Errorf("unsupport flag type '%T' for field 'internal'", exampleUnsupported),
 		},
+		{
+			structField: reflect.StructField{Name: "withUsage", Type: reflect.TypeOf(10), Tag: reflect.StructTag(`cli.flag.usage:"Some usage text"`)},
+			value: reflect.ValueOf(10),
+			flag: &cli.IntFlag{Name: "withUsage", Value: 10, EnvVars: []string{"WITH_USAGE"}, Usage: "Some usage text"},
+			err: nil,
+		},
+		{
+			structField: reflect.StructField{Name: "requiredFlag", Type: reflect.TypeOf(10), Tag: reflect.StructTag(`cli.flag.required:"true"`)},
+			value: reflect.ValueOf(10),
+			flag: &cli.IntFlag{Name: "requiredFlag", Value: 10, EnvVars: []string{"REQUIRED_FLAG"}, Required: true},
+			err: nil,
+		},
+		{
+			structField: reflect.StructField{Name: "requiredFlag", Type: reflect.TypeOf(10), Tag: reflect.StructTag(`cli.flag.required:"uc"`)},
+			value: reflect.ValueOf(10),
+			flag:nil,
+			err: fmt.Errorf(`error parse cli.flag.required: strconv.ParseBool: parsing "uc": invalid syntax`),
+		},
 	}
 
 	for _, table := range tables {

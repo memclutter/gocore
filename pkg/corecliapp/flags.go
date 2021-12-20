@@ -20,8 +20,12 @@ import (
 // - cli.flag.name - flag name, if empty use struct field name in lowerCamelCase
 // - cli.flag.value - flag value (default for usage and help), if empty use reflect value
 // - cli.flag.envVars - flag environment variables, if empty use struct field name in SNAKE_CASE
+// - cli.flag.required - flag required, if empty not required
+// - cli.flag.usage - flag usage text
 // - @TODO usage, help and etc urfave/cli Flag struct field
 func createFlag(structField reflect.StructField, value reflect.Value) (cli.Flag, error) {
+
+	var err error
 
 	// cli.flag.name
 	name := strings.TrimSpace(structField.Tag.Get("cli.flag.name"))
@@ -102,65 +106,49 @@ func createFlag(structField reflect.StructField, value reflect.Value) (cli.Flag,
 		}
 	}
 
+	// cli.flag.required
+	required := false
+	if requiredString := strings.TrimSpace(structField.Tag.Get("cli.flag.required")); len(requiredString) > 0 {
+		required, err = strconv.ParseBool(requiredString)
+		if err != nil {
+			return nil, fmt.Errorf("error parse cli.flag.required: %v", err)
+		}
+	}
+
+	// cli.flag.usage
+	usage := strings.TrimSpace(structField.Tag.Get("cli.flag.usage"))
+
 	// create cli.Flag
+	var flag reflect.Value
 	switch value.Interface().(type) {
 	case string:
-		return &cli.StringFlag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   flagValue.String(),
-		}, nil
+		flag = reflect.ValueOf(&cli.StringFlag{Value: flagValue.String()})
 	case time.Duration:
-		return &cli.DurationFlag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   time.Duration(flagValue.Int()),
-		}, nil
+		flag = reflect.ValueOf(&cli.DurationFlag{Value: time.Duration(flagValue.Int())})
 	case bool:
-		return &cli.BoolFlag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   flagValue.Bool(),
-		}, nil
+		flag = reflect.ValueOf(&cli.BoolFlag{Value: flagValue.Bool()})
 	case float64:
-		return &cli.Float64Flag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   flagValue.Float(),
-		}, nil
+		flag = reflect.ValueOf(&cli.Float64Flag{Value: flagValue.Float()})
 	case time.Time:
-		return &cli.TimestampFlag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   cli.NewTimestamp(flagValue.Interface().(time.Time)),
-		}, nil
+		flag = reflect.ValueOf(&cli.TimestampFlag{Value: cli.NewTimestamp(flagValue.Interface().(time.Time))})
 	case int:
-		return &cli.IntFlag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   int(flagValue.Int()),
-		}, nil
+		flag = reflect.ValueOf(&cli.IntFlag{Value: int(flagValue.Int())})
 	case int64:
-		return &cli.Int64Flag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   flagValue.Int(),
-		}, nil
+		flag = reflect.ValueOf(&cli.Int64Flag{Value: flagValue.Int()})
 	case uint:
-		return &cli.UintFlag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   uint(flagValue.Uint()),
-		}, nil
+		flag = reflect.ValueOf(&cli.UintFlag{Value: uint(flagValue.Uint())})
 	case uint64:
-		return &cli.Uint64Flag{
-			Name:    name,
-			EnvVars: envVars,
-			Value:   flagValue.Uint(),
-		}, nil
+		flag = reflect.ValueOf(&cli.Uint64Flag{Value: flagValue.Uint()})
 	default:
 		return nil, fmt.Errorf("unsupport flag type '%T' for field '%s'", value.Interface(), structField.Name)
 	}
+
+	flag.Elem().FieldByName("Name").SetString(name)
+	flag.Elem().FieldByName("EnvVars").Set(reflect.ValueOf(envVars))
+	flag.Elem().FieldByName("Required").SetBool(required)
+	flag.Elem().FieldByName("Usage").SetString(usage)
+
+	return flag.Interface().(cli.Flag), nil
 }
 
 // createFlags godoc
