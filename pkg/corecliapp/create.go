@@ -5,6 +5,7 @@ import (
 	"github.com/memclutter/gocore/pkg/corereflect"
 	"github.com/urfave/cli/v2"
 	"reflect"
+	"time"
 )
 
 // create godoc
@@ -118,6 +119,7 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 			rtCommand := corereflect.PtrTypeOf(rCommand)
 			command := &cli.Command{}
 			flagsIndex := -1
+			periodicalInterval := 0 * time.Second // for periodical commands
 			for j := 0; j < rtCommand.NumField(); j++ {
 				field := rtCommand.Field(j)
 				if field.Tag.Get("cli.command") == "name" {
@@ -133,6 +135,8 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 					if err != nil {
 						return nil, fmt.Errorf("error lookup command flags: %v", err)
 					}
+				} else if field.Tag.Get("cli.command") == "periodical" {
+					periodicalInterval = time.Duration(rCommand.Field(j).Int())
 				}
 			}
 
@@ -150,12 +154,28 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 					return fmt.Errorf("error set service: %v", err)
 				}
 
-				// Call run method
-				rResult := rrCommand.MethodByName("Run").Call([]reflect.Value{})
-				if len(rResult) == 0 || rResult[0].IsNil() {
-					return nil
+				// If periodical command run every interval `cli.command:"periodical"
+				if periodicalInterval > 0 {
+					for {
+
+						// Call run method
+						rResult := rrCommand.MethodByName("Run").Call([]reflect.Value{})
+						if len(rResult) != 0 && !rResult[0].IsNil() {
+							return rResult[0].Interface().(error)
+						}
+
+						time.Sleep(periodicalInterval)
+					}
+				} else {
+
+					// Call run method
+					rResult := rrCommand.MethodByName("Run").Call([]reflect.Value{})
+					if len(rResult) == 0 || rResult[0].IsNil() {
+						return nil
+					}
+					return rResult[0].Interface().(error)
 				}
-				return rResult[0].Interface().(error)
+
 			}
 
 			commands = append(commands, command)
