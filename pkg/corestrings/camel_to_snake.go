@@ -12,6 +12,10 @@ func CamelToSnake(camel string) string {
 	l := len(camel)
 	for i, v := range camel {
 		// A is 65, a is 97
+		if v >= '0' && v <= '9' {
+			b.WriteRune(v)
+			continue
+		}
 		if v >= 'a' {
 			b.WriteRune(v)
 			continue
