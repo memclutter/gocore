@@ -9,6 +9,7 @@ func TestCamelToSnake(t *testing.T) {
 	}{
 		{"CamelCase", "camel_case"},
 		{"ApiKey", "api_key"},
+		{"float64", "float64"},
 	}
 
 	for _, table := range tables {
