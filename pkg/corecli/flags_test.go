@@ -1,13 +1,14 @@
 package corecli
 
 import (
+	"fmt"
 	"github.com/urfave/cli/v2"
 	"reflect"
 	"testing"
 	"time"
 )
 
-func Test_defineFlags(t *testing.T) {
+func TestGenerateFlags(t *testing.T) {
 	type Embedded struct {
 		EmbeddedField string
 	}
@@ -209,11 +210,35 @@ func Test_defineFlags(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			title: "Can't generate unsupported type",
+			i:    struct{
+				Unsupported byte
+			}{},
+			flags: nil,
+			err:   fmt.Errorf(`define field Unsupported error: unsupported flag type uint8`),
+		},
+		{
+			title: "Can't generate default invalid value",
+			i: struct{
+				Default int `cli.flag.value:"invalid"`
+			}{},
+			flags: nil,
+			err: fmt.Errorf(`define field Default error: strconv.Atoi: parsing "invalid": invalid syntax`),
+		},
+		{
+			title: "Can't generate invalid required",
+			i: struct{
+				Default int `cli.flag.required:"invalid"`
+			}{},
+			flags: nil,
+			err: fmt.Errorf(`define field Default error: strconv.ParseBool: parsing "invalid": invalid syntax`),
+		},
 	}
 
 	for _, table := range tables {
 		t.Run(table.title, func(t *testing.T) {
-			flags, err := defineFlags(table.i)
+			flags, err := GenerateFlags(table.i)
 			if !reflect.DeepEqual(table.err, err) {
 				t.Fatalf("assert err failed, excepted '%s', actual '%s'", table.err, err)
 			}

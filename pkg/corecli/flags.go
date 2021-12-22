@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// defineFlags godoc
+// GenerateFlags godoc
 //
 // Define urfave/cli flag slice from some golang struct. Support struct tags
 // - `cli.flag.name` name of flag, default lowerCamelCase(structField.Name)
@@ -15,7 +15,7 @@ import (
 // - `cli.flag.value` default value for flag
 // - `cli.flag.envVars` coma separated list of environment vars, default structField.Name
 // - `cli.flag.required` set flag is required
-func defineFlags(i interface{}) ([]cli.Flag, error) {
+func GenerateFlags(i interface{}) ([]cli.Flag, error) {
 	var err error
 	flags := make([]cli.Flag, 0)
 
