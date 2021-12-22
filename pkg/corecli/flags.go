@@ -47,11 +47,20 @@ func defineFlags(i interface{}) ([]cli.Flag, error) {
 		if err != nil {
 			return nil, fmt.Errorf("define field %s error: %v", field.Name, err)
 		}
+		required, err := generateFlagRequired(field.Tag)
+		if err != nil {
+			return nil, fmt.Errorf("define field %s error: %v", field.Name, err)
+		}
 
 		flagValueOf := reflect.ValueOf(flag).Elem()
 		flagValueOf.FieldByName("Name").SetString(name)
-		flagValueOf.FieldByName("EnvVars").Set(reflect.ValueOf(envVars))
-		flagValueOf.FieldByName("Usage").SetString(usage)
+		flagValueOf.FieldByName("Required").SetBool(required)
+		if len(envVars) > 0 {
+			flagValueOf.FieldByName("EnvVars").Set(reflect.ValueOf(envVars))
+		}
+		if len(usage) > 0 {
+			flagValueOf.FieldByName("Usage").SetString(usage)
+		}
 		if value != nil {
 			flagValueOf.FieldByName("Value").Set(reflect.ValueOf(value))
 		}

@@ -77,7 +77,7 @@ func Test_defineFlags(t *testing.T) {
 				Timestamp    time.Time     `cli.flag.name:"flagTimestamp" cli.flag.envVars:"FLAG_TIMESTAMP,TIMESTAMP"`
 				IntSlice     []int         `cli.flag.name:"flagIntSlice" cli.flag.envVars:"FLAG_INT_SLICE,INT_SLICE"`
 				Int64Slice   []int64       `cli.flag.name:"flagInt64Slice" cli.flag.envVars:"FLAG_INT64_SLICE,INT64_SLICE"`
-				Float64Slice []float64     `cli.flag.name:"flagFlat64Slice" cli.flag.envVars:"FLAG_FLOAT64_SLICE,FLOAT64_SLICE"`
+				Float64Slice []float64     `cli.flag.name:"flagFloat64Slice" cli.flag.envVars:"FLAG_FLOAT64_SLICE,FLOAT64_SLICE"`
 				StringSlice  []string      `cli.flag.name:"flagStringSlice" cli.flag.envVars:"FLAG_STRING_SLICE,STRING_SLICE"`
 			}{},
 			flags: []cli.Flag{
@@ -111,7 +111,7 @@ func Test_defineFlags(t *testing.T) {
 				Timestamp    time.Time     `cli.flag.name:"flagTimestamp" cli.flag.envVars:"-"`
 				IntSlice     []int         `cli.flag.name:"flagIntSlice" cli.flag.envVars:"-"`
 				Int64Slice   []int64       `cli.flag.name:"flagInt64Slice" cli.flag.envVars:"-"`
-				Float64Slice []float64     `cli.flag.name:"flagFlat64Slice" cli.flag.envVars:"-"`
+				Float64Slice []float64     `cli.flag.name:"flagFloat64Slice" cli.flag.envVars:"-"`
 				StringSlice  []string      `cli.flag.name:"flagStringSlice" cli.flag.envVars:"-"`
 			}{},
 			flags: []cli.Flag{
@@ -189,7 +189,7 @@ func Test_defineFlags(t *testing.T) {
 				Timestamp    time.Time     `cli.flag.name:"flagTimestamp" cli.flag.usage:"Usage of flag \"flagTimestamp\""`
 				IntSlice     []int         `cli.flag.name:"flagIntSlice" cli.flag.usage:"Usage of flag \"flagIntSlice\""`
 				Int64Slice   []int64       `cli.flag.name:"flagInt64Slice" cli.flag.usage:"Usage of flag \"flagInt64Slice\""`
-				Float64Slice []float64     `cli.flag.name:"flagFlat64Slice" cli.flag.usage:"Usage of flag \"flagFlat64Slice\""`
+				Float64Slice []float64     `cli.flag.name:"flagFloat64Slice" cli.flag.usage:"Usage of flag \"flagFlat64Slice\""`
 				StringSlice  []string      `cli.flag.name:"flagStringSlice" cli.flag.usage:"Usage of flag \"flagStringSlice\""`
 			}{},
 			flags: []cli.Flag{
@@ -219,7 +219,7 @@ func Test_defineFlags(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(table.flags, flags) {
-				t.Fatalf("assert flags failed\n\texcepted: %v\n\tactual: %v", table.flags, flags)
+				t.Fatalf("assert flags failed\n\texcepted: %+v\n\tactual:   %+v", table.flags, flags)
 			}
 		})
 	}

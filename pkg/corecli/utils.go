@@ -122,12 +122,8 @@ func generateFlagValue(tag reflect.StructTag, i interface{}) (interface{}, error
 		if len(tagValue) == 0 {
 			return nil, nil
 		}
-		tagValueSlice := strings.Split(tagValue, ",")
-		tagValueSlice = coreslices.StringApply(tagValueSlice, func(i int, s string) string { return strings.TrimSpace(s)})
-		tagValueSlice = coreslices.StringFilter(tagValueSlice, func(i int, s string) bool { return len(s) > 0 })
-
 		v := make([]int, 0)
-		for i, s := range tagValueSlice {
+		for i, s := range stringToStringSlice(tagValue) {
 			e, err := strconv.Atoi(s)
 			if err != nil {
 				return nil, fmt.Errorf("[%d]int: %v", i, err)
@@ -139,12 +135,8 @@ func generateFlagValue(tag reflect.StructTag, i interface{}) (interface{}, error
 		if len(tagValue) == 0 {
 			return nil, nil
 		}
-		tagValueSlice := strings.Split(tagValue, ",")
-		tagValueSlice = coreslices.StringApply(tagValueSlice, func(i int, s string) string { return strings.TrimSpace(s)})
-		tagValueSlice = coreslices.StringFilter(tagValueSlice, func(i int, s string) bool { return len(s) > 0 })
-
 		v := make([]int64, 0)
-		for i, s := range tagValueSlice {
+		for i, s := range stringToStringSlice(tagValue) {
 			e, err := strconv.ParseInt(s, 10, 64)
 			if err != nil {
 				return nil, fmt.Errorf("[%d]int64: %v", i, err)
@@ -156,12 +148,8 @@ func generateFlagValue(tag reflect.StructTag, i interface{}) (interface{}, error
 		if len(tagValue) == 0 {
 			return nil, nil
 		}
-		tagValueSlice := strings.Split(tagValue, ",")
-		tagValueSlice = coreslices.StringApply(tagValueSlice, func(i int, s string) string { return strings.TrimSpace(s)})
-		tagValueSlice = coreslices.StringFilter(tagValueSlice, func(i int, s string) bool { return len(s) > 0 })
-
 		v := make([]float64, 0)
-		for i, s := range tagValueSlice {
+		for i, s := range stringToStringSlice(tagValue) {
 			e, err := strconv.ParseFloat(s, 64)
 			if err != nil {
 				return nil, fmt.Errorf("[%d]float64: %v", i, err)
@@ -173,11 +161,23 @@ func generateFlagValue(tag reflect.StructTag, i interface{}) (interface{}, error
 		if len(tagValue) == 0 {
 			return nil, nil
 		}
-		tagValueSlice := strings.Split(tagValue, ",")
-		tagValueSlice = coreslices.StringApply(tagValueSlice, func(i int, s string) string { return strings.TrimSpace(s)})
-		tagValueSlice = coreslices.StringFilter(tagValueSlice, func(i int, s string) bool { return len(s) > 0 })
-		return cli.NewStringSlice(tagValueSlice...), nil
+		return cli.NewStringSlice(stringToStringSlice(tagValue)...), nil
 	default:
 		return nil, fmt.Errorf("unsupported flag type %T", i)
 	}
+}
+
+func generateFlagRequired(tag reflect.StructTag) (bool, error) {
+	s := strings.TrimSpace(tag.Get("cli.flag.required"))
+	if len(s) == 0 {
+		return false, nil
+	}
+	return strconv.ParseBool(s)
+}
+
+func stringToStringSlice(s string) []string {
+	ss := strings.Split(s, ",")
+	ss = coreslices.StringApply(ss, func(i int, s string) string { return strings.TrimSpace(s)})
+	ss = coreslices.StringFilter(ss, func(i int, s string) bool { return len(s) > 0 })
+	return 	ss
 }

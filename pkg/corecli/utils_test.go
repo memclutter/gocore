@@ -356,6 +356,118 @@ func Test_generateFlagValue(t *testing.T) {
 			value: time.Duration(0),
 			err: fmt.Errorf("time: invalid duration \"invalid\""),
 		},
+
+		{
+			title: "Can generate time.Time value",
+			tag: reflect.StructTag(`cli.flag.value:"2021-01-01T00:00:00.00Z"`),
+			i: time.Now(),
+			value: cli.NewTimestamp(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
+			err: nil,
+		},
+		{
+			title: "Can generate time.Time value from empty cli.flag.value",
+			tag: reflect.StructTag(`cli.flag.value:""`),
+			i: time.Now(),
+			value: nil,
+			err: nil,
+		},
+		{
+			title: "Can't generate invalid time.Time value",
+			tag: reflect.StructTag(`cli.flag.value:"invalid"`),
+			i: time.Now(),
+			value: nil,
+			err: fmt.Errorf("parsing time \"invalid\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"invalid\" as \"2006\""),
+		},
+
+		{
+			title: "Can generate []int value",
+			tag: reflect.StructTag(`cli.flag.value:"10,20,30, 40, 50"`),
+			i: []int{},
+			value: cli.NewIntSlice(10, 20, 30, 40, 50),
+			err: nil,
+		},
+		{
+			title: "Can generate []int value from empty cli.flag.value",
+			tag: reflect.StructTag(`cli.flag.value:""`),
+			i: []int{},
+			value: nil,
+			err: nil,
+		},
+		{
+			title: "Can't generate invalid []int value",
+			tag: reflect.StructTag(`cli.flag.value:"abc,10,20"`),
+			i: []int{},
+			value: nil,
+			err: fmt.Errorf(`[0]int: strconv.Atoi: parsing "abc": invalid syntax`),
+		},
+
+		{
+			title: "Can generate []int64 value",
+			tag: reflect.StructTag(`cli.flag.value:"10,20,30, 40, 50"`),
+			i: []int64{},
+			value: cli.NewInt64Slice(10, 20, 30, 40, 50),
+			err: nil,
+		},
+		{
+			title: "Can generate []int64 value from empty cli.flag.value",
+			tag: reflect.StructTag(`cli.flag.value:""`),
+			i: []int64{},
+			value: nil,
+			err: nil,
+		},
+		{
+			title: "Can't generate invalid []int64 value",
+			tag: reflect.StructTag(`cli.flag.value:"abc,10,20"`),
+			i: []int64{},
+			value: nil,
+			err: fmt.Errorf(`[0]int64: strconv.ParseInt: parsing "abc": invalid syntax`),
+		},
+
+		{
+			title: "Can generate []float64 value",
+			tag: reflect.StructTag(`cli.flag.value:"10.20,20.43,30, 40, 50"`),
+			i: []float64{},
+			value: cli.NewFloat64Slice(10.2, 20.43, 30, 40, 50),
+			err: nil,
+		},
+		{
+			title: "Can generate []float64 value from empty cli.flag.value",
+			tag: reflect.StructTag(`cli.flag.value:""`),
+			i: []float64{},
+			value: nil,
+			err: nil,
+		},
+		{
+			title: "Can't generate invalid []float64 value",
+			tag: reflect.StructTag(`cli.flag.value:"abc,10,20"`),
+			i: []float64{},
+			value: nil,
+			err: fmt.Errorf(`[0]float64: strconv.ParseFloat: parsing "abc": invalid syntax`),
+		},
+
+
+		{
+			title: "Can generate []string value",
+			tag: reflect.StructTag(`cli.flag.value:"string1,string2,string3,"`),
+			i: []string{},
+			value: cli.NewStringSlice("string1", "string2", "string3"),
+			err: nil,
+		},
+		{
+			title: "Can generate []string value from empty cli.flag.value",
+			tag: reflect.StructTag(`cli.flag.value:""`),
+			i: []string{},
+			value: nil,
+			err: nil,
+		},
+
+		{
+			title: "Can't generate unsupported value",
+			tag: reflect.StructTag(`cli.flag.value:"val"`),
+			i: byte('a'),
+			value: nil,
+			err: fmt.Errorf(`unsupported flag type uint8`),
+		},
 	}
 
 	for _, table := range tables {
@@ -367,6 +479,77 @@ func Test_generateFlagValue(t *testing.T) {
 
 			if !reflect.DeepEqual(table.value, value) {
 				t.Fatalf("assert value failed, excepted %#v, actual %#v", table.value, value)
+			}
+		})
+	}
+}
+
+func Test_generateFlagRequired(t *testing.T) {
+	tables := []struct{
+		title string
+		tag reflect.StructTag
+		required bool
+		err error
+	}{
+		{
+			title: "Can generate required",
+			tag: reflect.StructTag(`cli.flag.required:"true"`),
+			required: true,
+			err: nil,
+		},
+		{
+			title: "Can generate not required",
+			tag: reflect.StructTag(`cli.flag.required:"false"`),
+			required: false,
+			err: nil,
+		},
+		{
+			title: "Can generate not required with empty",
+			tag: reflect.StructTag(`cli.flag.required:""`),
+			required: false,
+			err: nil,
+		},
+		{
+			title: "Can't generate required invalid bool",
+			tag: reflect.StructTag(`cli.flag.required:"invalid"`),
+			required: false,
+			err: fmt.Errorf(`strconv.ParseBool: parsing "invalid": invalid syntax`),
+		},
+	}
+
+
+	for _, table := range tables {
+		t.Run(table.title, func(t *testing.T) {
+			required, err := generateFlagRequired(table.tag)
+			if fmt.Sprintf("%s",table.err) != fmt.Sprintf("%s", err) {
+				t.Fatalf("assert err failed, excepted '%s', actual '%s'", table.err, err)
+			}
+
+			if table.required != required {
+				t.Fatalf("assert value failed, excepted %#v, actual %#v", table.required, required)
+			}
+		})
+	}
+}
+
+func Test_stringToStringSlice(t *testing.T) {
+	tables := []struct{
+		title string
+		s string
+		ss []string
+	}{
+		{
+			title: "Can string to string slice",
+			s: "abc,zef, qwerty,lorem , ip sum,",
+			ss: []string{"abc", "zef", "qwerty", "lorem", "ip sum"},
+		},
+	}
+
+	for _, table := range tables {
+		t.Run(table.title, func(t *testing.T) {
+			ss := stringToStringSlice(table.s)
+			if !reflect.DeepEqual(table.ss, ss) {
+				t.Errorf("assert equal failed, excepted %#v, actual %#v", table.ss, ss)
 			}
 		})
 	}
