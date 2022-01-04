@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-redis/redis/v8"
-	"github.com/memclutter/gocore/pkg/corereflect"
 	"github.com/memclutter/gocore/pkg/coreslices"
 	"github.com/streadway/amqp"
 	"github.com/urfave/cli/v2"
@@ -13,8 +12,8 @@ import (
 )
 
 func setServices(c *cli.Context, rCommand reflect.Value) error {
-	rCommand = corereflect.PtrValueOf(rCommand)
-	rtCommand := corereflect.PtrTypeOf(rCommand)
+	rCommand = reflect.Indirect(rCommand)
+	rtCommand := rCommand.Type()
 
 	for j := 0; j < rtCommand.NumField(); j++ {
 		rfField := rtCommand.Field(j)

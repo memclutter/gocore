@@ -212,7 +212,7 @@ func TestGenerateFlags(t *testing.T) {
 		},
 		{
 			title: "Can't generate unsupported type",
-			i:    struct{
+			i: struct {
 				Unsupported byte
 			}{},
 			flags: nil,
@@ -220,19 +220,19 @@ func TestGenerateFlags(t *testing.T) {
 		},
 		{
 			title: "Can't generate default invalid value",
-			i: struct{
+			i: struct {
 				Default int `cli.flag.value:"invalid"`
 			}{},
 			flags: nil,
-			err: fmt.Errorf(`define field Default error: strconv.Atoi: parsing "invalid": invalid syntax`),
+			err:   fmt.Errorf(`define field Default error: strconv.Atoi: parsing "invalid": invalid syntax`),
 		},
 		{
 			title: "Can't generate invalid required",
-			i: struct{
+			i: struct {
 				Default int `cli.flag.required:"invalid"`
 			}{},
 			flags: nil,
-			err: fmt.Errorf(`define field Default error: strconv.ParseBool: parsing "invalid": invalid syntax`),
+			err:   fmt.Errorf(`define field Default error: strconv.ParseBool: parsing "invalid": invalid syntax`),
 		},
 	}
 
@@ -245,6 +245,92 @@ func TestGenerateFlags(t *testing.T) {
 
 			if !reflect.DeepEqual(table.flags, flags) {
 				t.Fatalf("assert flags failed\n\texcepted: %+v\n\tactual:   %+v", table.flags, flags)
+			}
+		})
+	}
+}
+
+func TestLoadFlags(t *testing.T) {
+	tables := []struct{
+		title string
+		flags interface{}
+		flagsRun interface{}
+		err error
+		args []string
+	}{
+		{
+			title: "Can load flags for generic types",
+			flags: &struct {
+				Bool      bool
+				Int       int
+				Int64     int64
+				Uint      uint
+				Uint64    uint64
+				Float64   float64
+				String    string
+				Duration  time.Duration
+			}{},
+			args: []string{
+				"gocore",
+				"--bool",
+				"--int", "32",
+				"--int64", "64",
+				"--uint", "132",
+				"--uint64", "164",
+				"--float64", "64.64",
+				"--string", "String",
+				"--duration", "10s",
+			},
+			flagsRun: &struct {
+				Bool      bool
+				Int       int
+				Int64     int64
+				Uint      uint
+				Uint64    uint64
+				Float64   float64
+				String    string
+				Duration  time.Duration
+			}{
+				Bool: true,
+				Int: 32,
+				Int64: 64,
+				Uint: 132,
+				Uint64: 164,
+				Float64: 64.64,
+				String: "String",
+				Duration: 10 * time.Second,
+			},
+			err: nil,
+		},
+	}
+
+	for _, table := range tables {
+		t.Run(table.title, func(t *testing.T) {
+			var err error
+			app := cli.NewApp()
+			app.Name = table.args[0]
+			// @TODO remove this call
+			app.Flags, err = GenerateFlags(table.flags)
+			if err != nil {
+				t.Fatalf("error generate flags: %v", err)
+				return
+			}
+			app.Action = func(c *cli.Context) error {
+				err = LoadFlags(reflect.ValueOf(table.flags), c)
+				if !reflect.DeepEqual(table.err, err) {
+					t.Fatalf("assert err failed, excepted '%s', actual '%s'", table.err, err)
+				}
+
+				if !reflect.DeepEqual(table.flags, table.flagsRun) {
+					t.Fatalf("assert flags failed, \n\texcepted %#v\n\tactual %#v", table.flags, table.flagsRun)
+				}
+
+				return nil
+			}
+
+			if err := app.Run(table.args); err != nil {
+				t.Errorf("app run error: %v", err)
+				return
 			}
 		})
 	}

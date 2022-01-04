@@ -2,7 +2,6 @@ package corecliapp
 
 import (
 	"fmt"
-	"github.com/memclutter/gocore/pkg/corereflect"
 	"github.com/urfave/cli/v2"
 	"reflect"
 	"time"
@@ -35,8 +34,8 @@ func create(appDefine interface{}) (*cli.App, error) {
 //
 // Lookup and parse app name from app define struct. App name contains in struct field with tag `cli:"name"`
 func lookupName(rAppDefine reflect.Value) string {
-	rAppDefine = corereflect.PtrValueOf(rAppDefine)
-	rtAppDefine := corereflect.PtrTypeOf(rAppDefine)
+	rAppDefine = reflect.Indirect(rAppDefine)
+	rtAppDefine := rAppDefine.Type()
 
 	// @only struct processing
 	if rtAppDefine.Kind() != reflect.Struct {
@@ -62,8 +61,8 @@ func lookupName(rAppDefine reflect.Value) string {
 // Lookup and parse app flags from app define struct.
 func lookupFlags(rAppDefine reflect.Value, flags []cli.Flag) ([]cli.Flag, error) {
 	var err error
-	rAppDefine = corereflect.PtrValueOf(rAppDefine)
-	rtAppDefine := corereflect.PtrTypeOf(rAppDefine)
+	rAppDefine = reflect.Indirect(rAppDefine)
+	rtAppDefine := rAppDefine.Type()
 
 	// @only struct processing
 	if rtAppDefine.Kind() != reflect.Struct {
@@ -92,8 +91,8 @@ func lookupFlags(rAppDefine reflect.Value, flags []cli.Flag) ([]cli.Flag, error)
 func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 	var err error
 	commands := cli.Commands{}
-	rAppDefine = corereflect.PtrValueOf(rAppDefine)
-	rtAppDefine := corereflect.PtrTypeOf(rAppDefine)
+	rAppDefine = reflect.Indirect(rAppDefine)
+	rtAppDefine := rAppDefine.Type()
 
 	// Root commands lookup, search `cli:"commands"` struct tag
 	if rtAppDefine.Kind() == reflect.Struct {
@@ -115,8 +114,8 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 		for i := 0; i < rAppDefine.Len(); i++ {
 			// @TODO check Command interface
 			rrCommand := rAppDefine.Index(i)
-			rCommand := corereflect.PtrValueOf(reflect.ValueOf(rrCommand.Interface()))
-			rtCommand := corereflect.PtrTypeOf(rCommand)
+			rCommand := reflect.Indirect(reflect.ValueOf(rrCommand.Interface()))
+			rtCommand := rCommand.Type()
 			command := &cli.Command{}
 			flagsIndex := -1
 			periodicalInterval := 0 * time.Second // for periodical commands
@@ -144,7 +143,7 @@ func lookupCommands(rAppDefine reflect.Value) (cli.Commands, error) {
 			command.Action = func(c *cli.Context) error {
 
 				// Preset app flags
-				rFlags := corereflect.PtrValueOf(rCommand.Field(flagsIndex))
+				rFlags := reflect.Indirect(rCommand.Field(flagsIndex))
 				if err := setFlags(c, rFlags); err != nil {
 					return fmt.Errorf("set flags error: %v", err)
 				}

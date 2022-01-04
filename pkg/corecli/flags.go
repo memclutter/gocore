@@ -5,6 +5,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"reflect"
 	"strings"
+	"time"
 )
 
 // GenerateFlags godoc
@@ -19,8 +20,8 @@ func GenerateFlags(i interface{}) ([]cli.Flag, error) {
 	var err error
 	flags := make([]cli.Flag, 0)
 
-	typeOf := reflect.TypeOf(i)
-	valueOf := reflect.ValueOf(i)
+	valueOf := reflect.Indirect(reflect.ValueOf(i))
+	typeOf := valueOf.Type()
 	for i := 0; i < typeOf.NumField(); i++ {
 		field := typeOf.Field(i)
 
@@ -69,4 +70,54 @@ func GenerateFlags(i interface{}) ([]cli.Flag, error) {
 	}
 
 	return flags, err
+}
+
+// LoadFlags godoc
+//
+// Extract and load values from urfave/cli context
+func LoadFlags(i reflect.Value, c *cli.Context) error {
+
+	valueOf := reflect.Indirect(i)
+	typeOf := valueOf.Type()
+	for i := 0; i < typeOf.NumField(); i++ {
+		field := typeOf.Field(i)
+		fieldValueOf := valueOf.Field(i)
+
+		// Recursive process embedded field
+		if field.Anonymous {
+			if err := LoadFlags(fieldValueOf, c); err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Bypass user struct tag `cli.flag:"-"`
+		if field.Tag.Get("cli.flag") == "-" {
+			continue
+		}
+
+		name := generateFlagName(field)
+		switch fieldValueOf.Interface().(type) {
+		case bool:
+			fieldValueOf.SetBool(c.Bool(name))
+		case int:
+			fieldValueOf.SetInt(int64(c.Int(name)))
+		case int64:
+			fieldValueOf.SetInt(c.Int64(name))
+		case uint:
+			fieldValueOf.SetUint(uint64(c.Uint(name)))
+		case uint64:
+			fieldValueOf.SetUint(c.Uint64(name))
+		case float64:
+			fieldValueOf.SetFloat(c.Float64(name))
+		case string:
+			fieldValueOf.SetString(c.String(name))
+		case time.Duration:
+			fieldValueOf.Set(reflect.ValueOf(c.Duration(name)))
+		default:
+			return fmt.Errorf("unsupported flag type %T", fieldValueOf.Interface())
+		}
+	}
+
+	return nil
 }

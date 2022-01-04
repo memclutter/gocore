@@ -2,7 +2,6 @@ package corecliapp
 
 import (
 	"fmt"
-	"github.com/memclutter/gocore/pkg/corereflect"
 	"github.com/memclutter/gocore/pkg/coreslices"
 	"github.com/memclutter/gocore/pkg/corestrings"
 	"github.com/urfave/cli/v2"
@@ -155,8 +154,8 @@ func createFlag(structField reflect.StructField, value reflect.Value) (cli.Flag,
 //
 // Process struct tags and create urfave/cli Flag slice
 func createFlags(i interface{}, flags []cli.Flag) ([]cli.Flag, error) {
-	value := corereflect.PtrValueOf(reflect.ValueOf(i))
-	valueType := corereflect.PtrTypeOf(value)
+	value := reflect.Indirect(reflect.ValueOf(i))
+	valueType := value.Type()
 
 	// Bypass non struct type kinds
 	if valueType.Kind() != reflect.Struct {
@@ -186,8 +185,8 @@ func createFlags(i interface{}, flags []cli.Flag) ([]cli.Flag, error) {
 //
 // Parse cli context and set all flags
 func setFlags(c *cli.Context, rFlags reflect.Value) error {
-	rFlags = corereflect.PtrValueOf(rFlags)
-	rtFlags := corereflect.PtrTypeOf(rFlags)
+	rFlags = reflect.Indirect(rFlags)
+	rtFlags := rFlags.Type()
 	for j := 0; j < rtFlags.NumField(); j++ {
 		rfField := rtFlags.Field(j)
 		rField := rFlags.Field(j)
@@ -214,7 +213,7 @@ func setFlags(c *cli.Context, rFlags reflect.Value) error {
 		case float64:
 			rField.SetFloat(c.Float64(name))
 		case time.Time:
-			rField.Set(corereflect.PtrValueOf(reflect.ValueOf(c.Timestamp(name))))
+			rField.Set(reflect.Indirect(reflect.ValueOf(c.Timestamp(name))))
 		case int:
 			rField.SetInt(int64(c.Int(name)))
 		case int64:
