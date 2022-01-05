@@ -24,14 +24,14 @@ jobs:
 
     - name: Up services
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: cd deployments && docker-compose up -d
+      run: cd deployments/test && docker-compose up -d && cd ../../
 
     - name: Test GO ${{ matrix.go_version }}
       run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
 
     - name: Down services
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: cd deployments && docker-compose down
+      run: cd deployments/test && docker-compose down && cd ../../
 
     - name: Upload to codecov
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.go_version == '1.17' }}
