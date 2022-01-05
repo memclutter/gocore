@@ -9,53 +9,11 @@ on:
 jobs:
 
   test:
-    runs-on: ${{ matrix.os }}
-    services:
-      db:
-        image: postgres
-        env:
-          POSTGRES_USER: gocore
-          POSTGRES_PASSWORD: gocore
-          POSTGRES_DB: gocore
-        ports:
-          # Maps tcp port 5432 on service container to the host
-          - "5432:5432"
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      cache:
-        image: redis
-        ports:
-          # Maps port 6379 on service container to the host
-          - "6379:6379"
-        # Set health checks to wait until redis has started
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      amqp:
-        image: rabbitmq
-        env:
-          RABBITMQ_DEFAULT_USER: gocore
-          RABBITMQ_DEFAULT_PASS: gocore
-          RABBITMQ_DEFAULT_VHOST: gocore
-        ports:
-          # Maps port 5672 on service container to the host
-          - "5672:5672"
-        # Set health checks to wait until rabbit has started
-        options: >-
-          --health-cmd "rabbitmq-diagnostics -q ping"
-          --health-interval 30s
-          --health-timeout 5s
-          --health-retries 3
     strategy:
       matrix:
-        go_version: ['1.14', '1.15', '1.16', '1.17']
-        os: ['ubuntu-latest', 'windows-latest', 'macOS-latest']
+        go_version: [ '1.14', '1.15', '1.16', '1.17' ]
+        os: [ 'ubuntu-latest', 'windows-latest', 'macOS-latest' ]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
 
@@ -64,10 +22,17 @@ jobs:
       with:
         go-version: ${{ matrix.go_version }}
 
+    - name: Up services
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: cd deployments && docker-compose up -d
+
     - name: Test GO ${{ matrix.go_version }}
       run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+
+    - name: Down services
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: cd deployments && docker-compose down
 
     - name: Upload to codecov
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.go_version == '1.17' }}
       run: bash <(curl -s https://codecov.io/bash)
-
