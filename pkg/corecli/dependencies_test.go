@@ -24,6 +24,10 @@ const (
 )
 
 func TestLoadDependencies(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration tests with services")
+	}
+
 	tables := []struct {
 		title string
 		i     interface{}
@@ -49,7 +53,7 @@ func TestLoadDependencies(t *testing.T) {
 		{
 			title: "Can't load dependency, because unsupported pgkName",
 			i: &struct {
-				DB   reflect.Kind `cli.command.dependency:"dsn:dsnDb"`
+				DB reflect.Kind `cli.command.dependency:"dsn:dsnDb"`
 			}{},
 			flags: []cli.Flag{
 				&cli.StringFlag{Name: "dsnDb"},
@@ -63,7 +67,7 @@ func TestLoadDependencies(t *testing.T) {
 		{
 			title: "Can't load dependency, because error in loader",
 			i: &struct {
-				DB   *pg.DB `cli.command.dependency:"dsn:dsnDb"`
+				DB *pg.DB `cli.command.dependency:"dsn:dsnDb"`
 			}{},
 			flags: []cli.Flag{
 				&cli.StringFlag{Name: "dsnDb"},
@@ -99,6 +103,10 @@ func TestLoadDependencies(t *testing.T) {
 }
 
 func Test_loadDependencyGoPgV10(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration tests with services")
+	}
+
 	tables := []struct {
 		title   string
 		v       reflect.Value
@@ -202,6 +210,10 @@ func Test_loadDependencyGoPgV10(t *testing.T) {
 }
 
 func Test_loadDependencyGoRedisV8(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration tests with services")
+	}
+
 	tables := []struct {
 		title   string
 		v       reflect.Value
@@ -305,6 +317,10 @@ func Test_loadDependencyGoRedisV8(t *testing.T) {
 }
 
 func Test_loadDependencyStreadwayAmqpConnection(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration tests with services")
+	}
+
 	tables := []struct {
 		title   string
 		v       reflect.Value
@@ -374,6 +390,10 @@ func Test_loadDependencyStreadwayAmqpConnection(t *testing.T) {
 }
 
 func Test_loadDependencyStreadwayAmqpChannel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration tests with services")
+	}
+
 	mqConnection, err := amqp.Dial(dsnAmqp)
 	if err != nil {
 		t.Fatalf("error connect to amqp: %v", err)
