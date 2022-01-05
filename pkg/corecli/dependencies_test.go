@@ -5,6 +5,7 @@ import (
 	"github.com/go-pg/pg/v10"
 	"github.com/streadway/amqp"
 	"github.com/urfave/cli/v2"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -24,8 +25,8 @@ const (
 )
 
 func TestLoadDependencies(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration tests with services")
+	if os.Getenv("DEPENDENCIES_TEST") == "" {
+		t.Skip("skipping dependencies test")
 	}
 
 	tables := []struct {
@@ -103,8 +104,8 @@ func TestLoadDependencies(t *testing.T) {
 }
 
 func Test_loadDependencyGoPgV10(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration tests with services")
+	if os.Getenv("DEPENDENCIES_TEST") == "" {
+		t.Skip("skipping dependencies test")
 	}
 
 	tables := []struct {
@@ -210,8 +211,8 @@ func Test_loadDependencyGoPgV10(t *testing.T) {
 }
 
 func Test_loadDependencyGoRedisV8(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration tests with services")
+	if os.Getenv("DEPENDENCIES_TEST") == "" {
+		t.Skip("skipping dependencies test")
 	}
 
 	tables := []struct {
@@ -317,8 +318,8 @@ func Test_loadDependencyGoRedisV8(t *testing.T) {
 }
 
 func Test_loadDependencyStreadwayAmqpConnection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration tests with services")
+	if os.Getenv("DEPENDENCIES_TEST") == "" {
+		t.Skip("skipping dependencies test")
 	}
 
 	tables := []struct {
@@ -390,8 +391,8 @@ func Test_loadDependencyStreadwayAmqpConnection(t *testing.T) {
 }
 
 func Test_loadDependencyStreadwayAmqpChannel(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration tests with services")
+	if os.Getenv("DEPENDENCIES_TEST") == "" {
+		t.Skip("skipping dependencies test")
 	}
 
 	mqConnection, err := amqp.Dial(dsnAmqp)
