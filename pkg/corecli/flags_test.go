@@ -251,25 +251,53 @@ func TestGenerateFlags(t *testing.T) {
 }
 
 func TestLoadFlags(t *testing.T) {
-	tables := []struct{
-		title string
-		flags interface{}
-		flagsRun interface{}
-		err error
-		args []string
+	type BaseFlags struct {
+		Bool     bool
+		Int      int
+		Int64    int64
+		Uint     uint
+		Uint64   uint64
+		Float64  float64
+		String   string
+		Duration time.Duration
+	}
+
+	type UnsupportedBaseFlags struct {
+		String string
+		Int16  int16
+	}
+
+	tables := []struct {
+		title         string
+		app           *cli.App
+		args          []string
+		flags         interface{}
+		flagsExcepted interface{}
+		err           error
 	}{
 		{
 			title: "Can load flags for generic types",
-			flags: &struct {
-				Bool      bool
-				Int       int
-				Int64     int64
-				Uint      uint
-				Uint64    uint64
-				Float64   float64
-				String    string
-				Duration  time.Duration
-			}{},
+			app: &cli.App{
+				Name: "gocore",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{Name: "bool"},
+					&cli.IntFlag{Name: "int"},
+					&cli.Int64Flag{Name: "int64"},
+					&cli.UintFlag{Name: "uint"},
+					&cli.Uint64Flag{Name: "uint64"},
+					&cli.Float64Flag{Name: "float64"},
+					&cli.StringFlag{Name: "string"},
+					&cli.DurationFlag{Name: "duration"},
+				},
+				Commands: cli.Commands{
+					{
+						Name: "command",
+						Flags: []cli.Flag{
+							&cli.StringFlag{Name: "innerString"},
+						},
+					},
+				},
+			},
 			args: []string{
 				"gocore",
 				"--bool",
@@ -280,55 +308,123 @@ func TestLoadFlags(t *testing.T) {
 				"--float64", "64.64",
 				"--string", "String",
 				"--duration", "10s",
+				"command",
+				"--innerString", "inner",
 			},
-			flagsRun: &struct {
-				Bool      bool
-				Int       int
-				Int64     int64
-				Uint      uint
-				Uint64    uint64
-				Float64   float64
-				String    string
-				Duration  time.Duration
+			flags: &struct {
+				BaseFlags
+				InnerString  string
+				IgnoreString string `cli.flag:"-"`
+			}{},
+			flagsExcepted: &struct {
+				BaseFlags
+				InnerString  string
+				IgnoreString string `cli.flag:"-"`
 			}{
-				Bool: true,
-				Int: 32,
-				Int64: 64,
-				Uint: 132,
-				Uint64: 164,
-				Float64: 64.64,
-				String: "String",
-				Duration: 10 * time.Second,
+				BaseFlags: BaseFlags{
+					Bool:     true,
+					Int:      32,
+					Int64:    64,
+					Uint:     132,
+					Uint64:   164,
+					Float64:  64.64,
+					String:   "String",
+					Duration: 10 * time.Second,
+				},
+				InnerString:  "inner",
+				IgnoreString: "",
 			},
 			err: nil,
+		},
+		{
+			title: "Can return error for unsupported types",
+			app: &cli.App{
+				Name: "gocore",
+				Commands: cli.Commands{
+					{
+						Name: "command",
+						Flags: []cli.Flag{
+							&cli.StringFlag{Name: "innerString"},
+						},
+					},
+				},
+			},
+			args: []string{
+				"gocore",
+				"command",
+				"--innerString", "inner",
+			},
+			flags: &struct {
+				InnerString string
+				Int16       int16
+			}{},
+			flagsExcepted: &struct {
+				InnerString string
+				Int16       int16
+			}{
+				InnerString: "inner",
+				Int16:       0,
+			},
+			err: fmt.Errorf(`unsupported flag type int16`),
+		},
+		{
+			title: "Can return error for unsupported types in embedded",
+			app: &cli.App{
+				Name: "gocore",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "string"},
+				},
+				Commands: cli.Commands{
+					{
+						Name: "command",
+						Flags: []cli.Flag{
+							&cli.StringFlag{Name: "innerString"},
+						},
+					},
+				},
+			},
+			args: []string{
+				"gocore",
+				"--string", "String",
+				"command",
+				"--innerString", "inner",
+			},
+			flags: &struct {
+				UnsupportedBaseFlags
+				InnerString string
+			}{},
+			flagsExcepted: &struct {
+				UnsupportedBaseFlags
+				InnerString string
+			}{
+				UnsupportedBaseFlags: UnsupportedBaseFlags{
+					String: "String",
+					Int16:  0,
+				},
+				InnerString: "",
+			},
+			err: fmt.Errorf(`unsupported flag type int16`),
 		},
 	}
 
 	for _, table := range tables {
 		t.Run(table.title, func(t *testing.T) {
 			var err error
-			app := cli.NewApp()
-			app.Name = table.args[0]
-			// @TODO remove this call
-			app.Flags, err = GenerateFlags(table.flags)
-			if err != nil {
-				t.Fatalf("error generate flags: %v", err)
-				return
-			}
-			app.Action = func(c *cli.Context) error {
+			table.app.Commands[0].Action = func(c *cli.Context) error {
 				err = LoadFlags(reflect.ValueOf(table.flags), c)
 				if !reflect.DeepEqual(table.err, err) {
 					t.Fatalf("assert err failed, excepted '%s', actual '%s'", table.err, err)
+					return nil
 				}
 
-				if !reflect.DeepEqual(table.flags, table.flagsRun) {
-					t.Fatalf("assert flags failed, \n\texcepted %#v\n\tactual %#v", table.flags, table.flagsRun)
+				if !reflect.DeepEqual(table.flags, table.flagsExcepted) {
+					t.Fatalf("assert flags failed, \n\texcepted %#v\n\tactual %#v", table.flags, table.flagsExcepted)
 				}
 
 				return nil
 			}
 
-			if err := app.Run(table.args); err != nil {
+			if err := table.app.Run(table.args); err != nil {
 				t.Errorf("app run error: %v", err)
 				return
 			}

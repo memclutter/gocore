@@ -79,7 +79,7 @@ func GenerateCommands(i interface{}) (cli.Commands, error) {
 			// Default initialization
 			if err := LoadFlags(elFlags, c); err != nil {
 				return err
-			} else if err := LoadDependencies(el, c); err != nil {
+			} else if err := LoadDependencies(elValueOf, c); err != nil {
 				return err
 			}
 

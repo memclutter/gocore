@@ -177,7 +177,21 @@ func generateFlagRequired(tag reflect.StructTag) (bool, error) {
 
 func stringToStringSlice(s string) []string {
 	ss := strings.Split(s, ",")
-	ss = coreslices.StringApply(ss, func(i int, s string) string { return strings.TrimSpace(s)})
+	ss = coreslices.StringApply(ss, func(i int, s string) string { return strings.TrimSpace(s) })
 	ss = coreslices.StringFilter(ss, func(i int, s string) bool { return len(s) > 0 })
-	return 	ss
+	return ss
+}
+
+func stringToStringMap(s string) map[string]string {
+	m := make(map[string]string)
+	ss := strings.Split(s, ",")
+	for _, s := range ss {
+		s = strings.TrimSpace(s)
+		sp := strings.Split(s, ":")
+		if len(sp) != 2 {
+			continue
+		}
+		m[sp[0]] = sp[1]
+	}
+	return m
 }
