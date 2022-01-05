@@ -10,17 +10,17 @@ import (
 )
 
 const (
-	dsnAmqp  = "amqp://gocore:gocore@localhost:5672/gocore"
-	dsnCache = "redis://localhost:6379/1"
-	dsnDb    = "postgres://gocore:gocore@localhost:5432/gocore?sslmode=disable"
+	dsnAmqp  = "amqp://gocore:gocore@127.0.0.1:5672/gocore"
+	dsnCache = "redis://127.0.0.1:6379/1"
+	dsnDb    = "postgres://gocore:gocore@127.0.0.1:5432/gocore?sslmode=disable"
 
-	dsnAmqpInvalid  = "invalid+amqp://gocore:gocore@localhost:5672/gocore"
-	dsnCacheInvalid = "invalid+redis://localhost:6379/1"
-	dsnDbInvalid    = "invalid+postgres://gocore:gocore@localhost:5432/gocore?sslmode=disable"
+	dsnAmqpInvalid  = "invalid+amqp://gocore:gocore@127.0.0.1:5672/gocore"
+	dsnCacheInvalid = "invalid+redis://127.0.0.1:6379/1"
+	dsnDbInvalid    = "invalid+postgres://gocore:gocore@127.0.0.1:5432/gocore?sslmode=disable"
 
-	dsnAmqpConnectError  = "amqp://gocore:gocore@localhost:2765/gocore"
-	dsnCacheConnectError = "redis://localhost:9736/1"
-	dsnDbConnectError    = "postgres://gocore:gocore@localhost:2345/gocore?sslmode=disable"
+	dsnAmqpConnectError  = "amqp://gocore:gocore@127.0.0.1:2765/gocore"
+	dsnCacheConnectError = "redis://127.0.0.1:9736/1"
+	dsnDbConnectError    = "postgres://gocore:gocore@127.0.0.1:2345/gocore?sslmode=disable"
 )
 
 func TestLoadDependencies(t *testing.T) {
