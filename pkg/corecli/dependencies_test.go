@@ -25,8 +25,8 @@ const (
 )
 
 func TestLoadDependencies(t *testing.T) {
-	if os.Getenv("DEPENDENCIES_TEST") == "" {
-		t.Skip("skipping dependencies test")
+	if os.Getenv("SERVICES_UP") == "" {
+		t.Skip("skipping dependencies test, docker compose services is not supported")
 	}
 
 	tables := []struct {
@@ -104,8 +104,8 @@ func TestLoadDependencies(t *testing.T) {
 }
 
 func Test_loadDependencyGoPgV10(t *testing.T) {
-	if os.Getenv("DEPENDENCIES_TEST") == "" {
-		t.Skip("skipping dependencies test")
+	if os.Getenv("SERVICES_UP") == "" {
+		t.Skip("skipping dependencies test, docker compose services is not supported")
 	}
 
 	tables := []struct {
@@ -211,8 +211,8 @@ func Test_loadDependencyGoPgV10(t *testing.T) {
 }
 
 func Test_loadDependencyGoRedisV8(t *testing.T) {
-	if os.Getenv("DEPENDENCIES_TEST") == "" {
-		t.Skip("skipping dependencies test")
+	if os.Getenv("SERVICES_UP") == "" {
+		t.Skip("skipping dependencies test, docker compose services is not supported")
 	}
 
 	tables := []struct {
@@ -318,8 +318,8 @@ func Test_loadDependencyGoRedisV8(t *testing.T) {
 }
 
 func Test_loadDependencyStreadwayAmqpConnection(t *testing.T) {
-	if os.Getenv("DEPENDENCIES_TEST") == "" {
-		t.Skip("skipping dependencies test")
+	if os.Getenv("SERVICES_UP") == "" {
+		t.Skip("skipping dependencies test, docker compose services is not supported")
 	}
 
 	tables := []struct {
@@ -391,8 +391,8 @@ func Test_loadDependencyStreadwayAmqpConnection(t *testing.T) {
 }
 
 func Test_loadDependencyStreadwayAmqpChannel(t *testing.T) {
-	if os.Getenv("DEPENDENCIES_TEST") == "" {
-		t.Skip("skipping dependencies test")
+	if os.Getenv("SERVICES_UP") == "" {
+		t.Skip("skipping dependencies test, docker compose services is not supported")
 	}
 
 	mqConnection, err := amqp.Dial(dsnAmqp)

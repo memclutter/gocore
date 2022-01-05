@@ -28,7 +28,7 @@ jobs:
 
     - name: Test GO ${{ matrix.go_version }}
       env:
-        DEPENDENCIES_TEST: ${{ matrix.os == 'ubuntu-latest' }}
+        SERVICES_UP: "${{ matrix.os == 'ubuntu-latest' && '1' || '' }}"
       run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
 
     - name: Down services
