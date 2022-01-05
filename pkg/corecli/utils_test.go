@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"reflect"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -187,32 +188,38 @@ func Test_generateFlagEnvVars(t *testing.T) {
 
 func Test_generateFlagValue(t *testing.T) {
 	tables := []struct {
-		title string
-		tag   reflect.StructTag
-		i     interface{}
-		value interface{}
-		err   error
+		title  string
+		tag    reflect.StructTag
+		i      interface{}
+		value  interface{}
+		errMap map[string]error
 	}{
 		{
 			title: "Can generate bool value",
 			tag:   reflect.StructTag(`cli.flag.value:"true"`),
 			i:     false,
 			value: true,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate bool value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     false,
 			value: false,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid bool value",
 			tag:   reflect.StructTag(`cli.flag.value:"invalid"`),
 			i:     false,
 			value: false,
-			err:   fmt.Errorf("strconv.ParseBool: parsing \"invalid\": invalid syntax"),
+			errMap: map[string]error{
+				"": fmt.Errorf(`strconv.ParseBool: parsing "invalid": invalid syntax`),
+			},
 		},
 
 		{
@@ -220,21 +227,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"10"`),
 			i:     int(0),
 			value: int(10),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate int value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     int(0),
 			value: int(0),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid int value",
 			tag:   reflect.StructTag(`cli.flag.value:"invalid"`),
 			i:     int(0),
 			value: int(0),
-			err:   fmt.Errorf("strconv.Atoi: parsing \"invalid\": invalid syntax"),
+			errMap: map[string]error{
+				"": fmt.Errorf(`strconv.Atoi: parsing "invalid": invalid syntax`),
+			},
 		},
 
 		{
@@ -242,21 +255,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"10"`),
 			i:     int64(0),
 			value: int64(10),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate int64 value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     int64(0),
 			value: int64(0),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid int64 value",
 			tag:   reflect.StructTag(`cli.flag.value:"invalid"`),
 			i:     int64(0),
 			value: int64(0),
-			err:   fmt.Errorf("strconv.ParseInt: parsing \"invalid\": invalid syntax"),
+			errMap: map[string]error{
+				"": fmt.Errorf(`strconv.ParseInt: parsing "invalid": invalid syntax`),
+			},
 		},
 
 		{
@@ -264,21 +283,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"100.50"`),
 			i:     float64(0),
 			value: 100.5,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate float64 value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     float64(0),
 			value: float64(0),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid float64 value",
 			tag:   reflect.StructTag(`cli.flag.value:"invalid"`),
 			i:     float64(0),
 			value: float64(0),
-			err:   fmt.Errorf("strconv.ParseFloat: parsing \"invalid\": invalid syntax"),
+			errMap: map[string]error{
+				"": fmt.Errorf(`strconv.ParseFloat: parsing "invalid": invalid syntax`),
+			},
 		},
 
 		{
@@ -286,21 +311,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"10"`),
 			i:     uint(0),
 			value: uint(10),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate uint value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     uint(0),
 			value: uint(0),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid uint value",
 			tag:   reflect.StructTag(`cli.flag.value:"invalid"`),
 			i:     uint(0),
 			value: uint(0),
-			err:   fmt.Errorf("strconv.ParseUint: parsing \"invalid\": invalid syntax"),
+			errMap: map[string]error{
+				"": fmt.Errorf(`strconv.ParseUint: parsing "invalid": invalid syntax`),
+			},
 		},
 
 		{
@@ -308,21 +339,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"10"`),
 			i:     uint64(0),
 			value: uint64(10),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate uint64 value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     uint64(0),
 			value: uint64(0),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid uint64 value",
 			tag:   reflect.StructTag(`cli.flag.value:"invalid"`),
 			i:     uint64(0),
 			value: uint64(0),
-			err:   fmt.Errorf("strconv.ParseUint: parsing \"invalid\": invalid syntax"),
+			errMap: map[string]error{
+				"": fmt.Errorf(`strconv.ParseUint: parsing "invalid": invalid syntax`),
+			},
 		},
 
 		{
@@ -330,7 +367,9 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"string"`),
 			i:     "",
 			value: "string",
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 
 		{
@@ -338,21 +377,29 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"10s"`),
 			i:     time.Duration(0),
 			value: 10 * time.Second,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate time.Duration value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     time.Duration(0),
 			value: time.Duration(0),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid time.Duration value",
 			tag:   reflect.StructTag(`cli.flag.value:"invalid"`),
 			i:     time.Duration(0),
 			value: time.Duration(0),
-			err:   fmt.Errorf("time: invalid duration \"invalid\""),
+			errMap: map[string]error{
+				"go1.14":    fmt.Errorf(`time: invalid duration invalid`),
+				"go1.14.15": fmt.Errorf(`time: invalid duration invalid`),
+				"":          fmt.Errorf(`time: invalid duration "invalid"`),
+			},
 		},
 
 		{
@@ -360,21 +407,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"2021-01-01T00:00:00.00Z"`),
 			i:     time.Now(),
 			value: cli.NewTimestamp(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate time.Time value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     time.Now(),
 			value: nil,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid time.Time value",
 			tag:   reflect.StructTag(`cli.flag.value:"invalid"`),
 			i:     time.Now(),
 			value: nil,
-			err:   fmt.Errorf("parsing time \"invalid\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"invalid\" as \"2006\""),
+			errMap: map[string]error{
+				"": fmt.Errorf("parsing time \"invalid\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"invalid\" as \"2006\""),
+			},
 		},
 
 		{
@@ -382,21 +435,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"10,20,30, 40, 50"`),
 			i:     []int{},
 			value: cli.NewIntSlice(10, 20, 30, 40, 50),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate []int value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     []int{},
 			value: nil,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid []int value",
 			tag:   reflect.StructTag(`cli.flag.value:"abc,10,20"`),
 			i:     []int{},
 			value: nil,
-			err:   fmt.Errorf(`[0]int: strconv.Atoi: parsing "abc": invalid syntax`),
+			errMap: map[string]error{
+				"": fmt.Errorf(`[0]int: strconv.Atoi: parsing "abc": invalid syntax`),
+			},
 		},
 
 		{
@@ -404,21 +463,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"10,20,30, 40, 50"`),
 			i:     []int64{},
 			value: cli.NewInt64Slice(10, 20, 30, 40, 50),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate []int64 value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     []int64{},
 			value: nil,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid []int64 value",
 			tag:   reflect.StructTag(`cli.flag.value:"abc,10,20"`),
 			i:     []int64{},
 			value: nil,
-			err:   fmt.Errorf(`[0]int64: strconv.ParseInt: parsing "abc": invalid syntax`),
+			errMap: map[string]error{
+				"": fmt.Errorf(`[0]int64: strconv.ParseInt: parsing "abc": invalid syntax`),
+			},
 		},
 
 		{
@@ -426,21 +491,27 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"10.20,20.43,30, 40, 50"`),
 			i:     []float64{},
 			value: cli.NewFloat64Slice(10.2, 20.43, 30, 40, 50),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate []float64 value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     []float64{},
 			value: nil,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can't generate invalid []float64 value",
 			tag:   reflect.StructTag(`cli.flag.value:"abc,10,20"`),
 			i:     []float64{},
 			value: nil,
-			err:   fmt.Errorf(`[0]float64: strconv.ParseFloat: parsing "abc": invalid syntax`),
+			errMap: map[string]error{
+				"": fmt.Errorf(`[0]float64: strconv.ParseFloat: parsing "abc": invalid syntax`),
+			},
 		},
 
 		{
@@ -448,14 +519,18 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"string1,string2,string3,"`),
 			i:     []string{},
 			value: cli.NewStringSlice("string1", "string2", "string3"),
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 		{
 			title: "Can generate []string value from empty cli.flag.value",
 			tag:   reflect.StructTag(`cli.flag.value:""`),
 			i:     []string{},
 			value: nil,
-			err:   nil,
+			errMap: map[string]error{
+				"": nil,
+			},
 		},
 
 		{
@@ -463,15 +538,21 @@ func Test_generateFlagValue(t *testing.T) {
 			tag:   reflect.StructTag(`cli.flag.value:"val"`),
 			i:     byte('a'),
 			value: nil,
-			err:   fmt.Errorf(`unsupported flag type uint8`),
+			errMap: map[string]error{
+				"": fmt.Errorf(`unsupported flag type uint8`),
+			},
 		},
 	}
 
 	for _, table := range tables {
 		t.Run(table.title, func(t *testing.T) {
 			value, err := generateFlagValue(table.tag, table.i)
-			if fmt.Sprintf("%s", table.err) != fmt.Sprintf("%s", err) {
-				t.Fatalf("assert err failed, excepted '%s', actual '%s'", table.err, err)
+			exceptedErr := table.errMap[""]
+			if versionedErr, ok := table.errMap[runtime.Version()]; ok {
+				exceptedErr = versionedErr
+			}
+			if fmt.Sprintf("%s", exceptedErr) != fmt.Sprintf("%s", err) {
+				t.Fatalf("assert err failed, excepted '%s', actual '%s'", exceptedErr, err)
 			}
 
 			if !reflect.DeepEqual(table.value, value) {
