@@ -6,6 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"reflect"
 	"strings"
+	"time"
 )
 
 type Runnable interface {
@@ -33,51 +34,24 @@ func GenerateCommands(i interface{}) (cli.Commands, error) {
 	valueOf := reflect.ValueOf(i)
 
 	for i := 0; i < valueOf.Len(); i++ {
-		command := &cli.Command{}
+
+		// el - Slice element, user defined command
 		el := valueOf.Index(i).Interface()
 		elValueOf := reflect.ValueOf(el)
 		elTypeOf := reflect.Indirect(elValueOf).Type()
+
+		command, flagsFieldValueOf, period, err := initCommand(elTypeOf, elValueOf)
+		if err != nil {
+			return nil, fmt.Errorf("error init command: %v", err)
+		}
+
 		elInitable, isImplementInit := el.(Initable)
 		elRunnable, isImplementRun := el.(Runnable)
 		elClearable, isImplementClear := el.(Clearable)
 
-		// Name by default, name of struct
-		command.Name = corestrings.ToLowerFirst(elTypeOf.Name())
-
-		var elFlags reflect.Value
-		for j := 0; j < elTypeOf.NumField(); j++ {
-			elField := elTypeOf.Field(j)
-			elFieldValue := reflect.Indirect(elValueOf).Field(j)
-			name := strings.TrimSpace(elField.Tag.Get("cli.command.name"))
-			if len(name) > 0 {
-				command.Name = name
-				elFieldValue.SetString(name)
-			}
-			usage := strings.TrimSpace(elField.Tag.Get("cli.command.usage"))
-			if len(usage) > 0 {
-				command.Usage = usage
-				elFieldValue.SetString(usage)
-			}
-			flags := strings.TrimSpace(elField.Tag.Get("cli.command.flags"))
-			if flags == "*" {
-				elFlags = elFieldValue
-				command.Flags, err = GenerateFlags(elFieldValue.Interface())
-				if err != nil {
-					return nil, fmt.Errorf("generate command flags error: %v", err)
-				}
-			}
-			subcommands := strings.TrimSpace(elField.Tag.Get("cli.command.subcommands"))
-			if subcommands == "*" {
-				command.Subcommands, err = GenerateCommands(elFieldValue.Interface())
-				if err != nil {
-					return nil, fmt.Errorf("generate subcommands error: %v", err)
-				}
-			}
-		}
-
 		command.Before = func(c *cli.Context) error {
 			// Default initialization
-			if err := LoadFlags(elFlags, c); err != nil {
+			if err := LoadFlags(flagsFieldValueOf, c); err != nil {
 				return err
 			} else if err := LoadDependencies(elValueOf, c); err != nil {
 				return err
@@ -91,7 +65,17 @@ func GenerateCommands(i interface{}) (cli.Commands, error) {
 
 		command.Action = func(c *cli.Context) error {
 			if isImplementRun {
-				return elRunnable.Run()
+				if period == 0 {
+					return elRunnable.Run()
+				}
+
+				// Periodical command
+				for {
+					if err := elRunnable.Run(); err != nil {
+						return err
+					}
+					time.Sleep(period)
+				}
 			}
 			return nil
 		}
@@ -100,6 +84,11 @@ func GenerateCommands(i interface{}) (cli.Commands, error) {
 			if isImplementClear {
 				return elClearable.Clear()
 			}
+
+			if err := CloseDependencies(elValueOf); err != nil {
+				return err
+			}
+
 			return nil
 		}
 
@@ -107,4 +96,61 @@ func GenerateCommands(i interface{}) (cli.Commands, error) {
 	}
 
 	return commands, err
+}
+
+func initCommand(typeOf reflect.Type, valueOf reflect.Value) (*cli.Command, reflect.Value, time.Duration, error) {
+	var flagsFieldValueOf reflect.Value
+	var period time.Duration
+	var err error
+
+	// Init command and set default name
+	command := &cli.Command{
+		Name: corestrings.ToLowerFirst(typeOf.Name()),
+	}
+
+	for j := 0; j < typeOf.NumField(); j++ {
+		field := typeOf.Field(j)
+		fieldValueOf := reflect.Indirect(valueOf).Field(j)
+
+		// Command name
+		name := strings.TrimSpace(field.Tag.Get("cli.command.name"))
+		if len(name) > 0 {
+			command.Name = name
+			fieldValueOf.SetString(name)
+		}
+
+		// Command usage
+		usage := strings.TrimSpace(field.Tag.Get("cli.command.usage"))
+		if len(usage) > 0 {
+			command.Usage = usage
+			fieldValueOf.SetString(usage)
+		}
+
+		// Command flags
+		flags := strings.TrimSpace(field.Tag.Get("cli.command.flags"))
+		if flags == "*" {
+			flagsFieldValueOf = fieldValueOf
+			command.Flags, err = GenerateFlags(fieldValueOf.Interface())
+			if err != nil {
+				return nil, flagsFieldValueOf, period, fmt.Errorf("generate flags error: %v", err)
+			}
+		}
+
+		// Periodical command
+		period, err = time.ParseDuration(field.Tag.Get("cli.command.period"))
+		if err != nil {
+			return nil, flagsFieldValueOf, period, fmt.Errorf("parse period error: %v", err)
+		}
+
+		// Command subcommands
+		subcommands := strings.TrimSpace(field.Tag.Get("cli.command.subcommands"))
+		if subcommands == "*" {
+			command.Subcommands, err = GenerateCommands(fieldValueOf.Interface())
+			if err != nil {
+				return nil, flagsFieldValueOf, period, fmt.Errorf("generate subcommands error: %v", err)
+			}
+		}
+	}
+
+	return command, flagsFieldValueOf, period, nil
 }

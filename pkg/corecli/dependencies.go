@@ -6,6 +6,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/streadway/amqp"
 	"github.com/urfave/cli/v2"
+	"io"
 	"reflect"
 	"strings"
 )
@@ -55,7 +56,7 @@ func LoadDependencies(v reflect.Value, c *cli.Context) error {
 			return fmt.Errorf("unsupported depdendency package %s", pkgPath)
 		}
 
-		dependency, err := loader(v, dependencyOptions, c)
+		dependency, err := loader(valueOf, dependencyOptions, c)
 		if err != nil {
 			return fmt.Errorf("%s: %v", pkgPath, err)
 		}
@@ -117,4 +118,42 @@ func loadDependencyStreadwayAmqpChannel(v reflect.Value, options map[string]stri
 		return nil, fmt.Errorf("failed init channel %v", err)
 	}
 	return ch, nil
+}
+
+func CloseDependencies(v reflect.Value) error {
+	valueOf := reflect.Indirect(v)
+	typeOf := valueOf.Type()
+
+	for i := 0; i < typeOf.NumField(); i++ {
+		field := typeOf.Field(i)
+		fieldValueOf := valueOf.Field(i)
+		if _, ok := field.Tag.Lookup(`cli.command.dependency`); !ok {
+			continue
+		}
+
+		pkgPath := field.Type.PkgPath()
+		typeName := field.Type.Name()
+		if field.Type.Kind() == reflect.Ptr {
+			pkgPath = field.Type.Elem().PkgPath()
+			typeName = field.Type.Elem().Name()
+		}
+		pkgPath = strings.Join([]string{pkgPath, typeName}, "::")
+
+		isCloser := map[string]bool{
+			"github.com/go-pg/pg/v10::DB":           true,
+			"github.com/go-redis/redis/v8::Client":  true,
+			"github.com/streadway/amqp::Connection": true,
+			"github.com/streadway/amqp::Channel":    false,
+		}[pkgPath]
+
+		if isCloser {
+			if closer, ok := fieldValueOf.Interface().(io.Closer); ok {
+				if err := closer.Close(); err != nil {
+					return fmt.Errorf("%s: error close %v", pkgPath, err)
+				}
+			}
+		}
+	}
+
+	return nil
 }
