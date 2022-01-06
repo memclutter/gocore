@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"io"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -72,6 +73,13 @@ func loadDependencyGoPgV10(v reflect.Value, options map[string]string, c *cli.Co
 	opt, err := pg.ParseURL(c.String(options["dsn"]))
 	if err != nil {
 		return nil, fmt.Errorf("error parse data source name: %v", err)
+	}
+	if option, ok := options["poolSize"]; ok {
+		poolSize, err := strconv.Atoi(option)
+		if err != nil {
+			return nil, fmt.Errorf("invalid parse poolSize option: %v", err)
+		}
+		opt.PoolSize = poolSize
 	}
 	db := pg.Connect(opt)
 	if _, ok := options["ping"]; ok {

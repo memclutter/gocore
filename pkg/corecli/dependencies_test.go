@@ -185,6 +185,40 @@ func Test_loadDependencyGoPgV10(t *testing.T) {
 			isNil: true,
 			err:   fmt.Errorf(`error connect to database: dial tcp 127.0.0.1:2345: connect: connection refused`),
 		},
+		{
+			title:   "Can load and set pool size go-pg v10 dependency correctly",
+			v:       reflect.ValueOf(struct{}{}),
+			options: map[string]string{"dsn": "dsnDb", "poolSize": "2"},
+			app: &cli.App{
+				Name: "gocore",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "dsnDb"},
+				},
+			},
+			args: []string{
+				"gocore",
+				"--dsnDb", dsnDb,
+			},
+			isNil: false,
+			err:   nil,
+		},
+		{
+			title: "Can't load and set pool size go-pg v10 dependency correctly",
+			v: reflect.ValueOf(struct{}{}),
+			options: map[string]string{"dsn": "dsnDb", "poolSize": "invalid"},
+			app: &cli.App{
+				Name: "gocore",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "dsnDb"},
+				},
+			},
+			args: []string{
+				"gocore",
+				"--dsnDb", dsnDb,
+			},
+			isNil: true,
+			err:   fmt.Errorf(`invalid parse poolSize option: strconv.Atoi: parsing "invalid": invalid syntax`),
+		},
 	}
 
 	for _, table := range tables {
