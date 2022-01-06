@@ -137,9 +137,11 @@ func initCommand(typeOf reflect.Type, valueOf reflect.Value) (*cli.Command, refl
 		}
 
 		// Periodical command
-		period, err = time.ParseDuration(field.Tag.Get("cli.command.period"))
-		if err != nil {
-			return nil, flagsFieldValueOf, period, fmt.Errorf("parse period error: %v", err)
+		if periodTag, ok := field.Tag.Lookup("cli.command.period"); ok {
+			period, err = time.ParseDuration(periodTag)
+			if err != nil {
+				return nil, flagsFieldValueOf, period, fmt.Errorf("parse period error: %v", err)
+			}
 		}
 
 		// Command subcommands
