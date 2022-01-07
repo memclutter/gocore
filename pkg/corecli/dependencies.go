@@ -155,7 +155,7 @@ func CloseDependencies(v reflect.Value) error {
 		}[pkgPath]
 
 		if isCloser {
-			if closer, ok := fieldValueOf.Interface().(io.Closer); ok {
+			if closer, ok := fieldValueOf.Interface().(io.Closer); ok && closer != nil {
 				if err := closer.Close(); err != nil {
 					return fmt.Errorf("%s: error close %v", pkgPath, err)
 				}
