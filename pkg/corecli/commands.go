@@ -67,8 +67,8 @@ func GenerateCommands(i interface{}) (cli.Commands, error) {
 			return nil
 		}
 
-		command.Action = func(c *cli.Context) error {
-			if isImplementRun {
+		if isImplementRun {
+			command.Action = func(c *cli.Context) error {
 				if period == 0 {
 					return elRunnable.Run()
 				}
@@ -81,7 +81,6 @@ func GenerateCommands(i interface{}) (cli.Commands, error) {
 					time.Sleep(period)
 				}
 			}
-			return nil
 		}
 
 		command.After = func(c *cli.Context) error {
