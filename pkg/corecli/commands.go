@@ -51,7 +51,7 @@ func GenerateCommands(i interface{}) (cli.Commands, error) {
 
 		command.Before = func(c *cli.Context) error {
 			// Default initialization
-			if !flagsFieldValueOf.IsZero() && !flagsFieldValueOf.IsNil() && flagsFieldValueOf.IsValid() {
+			if flagsFieldValueOf.IsValid() {
 				if err := LoadFlags(flagsFieldValueOf, c); err != nil {
 					return err
 				}
